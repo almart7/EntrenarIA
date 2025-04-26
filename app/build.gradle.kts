@@ -56,6 +56,8 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.generativeai)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.firebase.auth)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -68,6 +70,7 @@ dependencies {
     // When using the BoM, don't specify versions in Firebase dependencies
     implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
     // TODO: Add the dependencies for Firebase products you want to use
-
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
 
 }

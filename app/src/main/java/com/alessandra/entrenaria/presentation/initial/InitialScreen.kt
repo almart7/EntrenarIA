@@ -1,36 +1,75 @@
 package com.alessandra.entrenaria.presentation.initial
 
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alessandra.entrenaria.R
-import com.alessandra.entrenaria.ui.theme.EntrenarIATheme
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 
 @Composable
-fun InitialScreen(navigateToLogin: () -> Unit = {}, navigateToSignUp: () -> Unit = {}) {
+fun InitialScreen(
+    navigateToLogin: () -> Unit = {},
+    navigateToSignUp: () -> Unit = {},
+    navigateToProfile: () -> Unit = {}
+) {
+    val context = LocalContext.current
+    val auth = remember { FirebaseAuth.getInstance() }
+
+    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+        .requestIdToken(stringResource(id = R.string.default_web_client_id))
+        .requestEmail()
+        .build()
+
+    val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
+            val idToken = account.idToken
+            if (idToken != null) {
+                val credential = GoogleAuthProvider.getCredential(idToken, null)
+                auth.signInWithCredential(credential)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            // Usuario autenticado con éxito
+                            Log.d("InitialScreen", "Login exitoso: ${auth.currentUser?.email}")
+                            navigateToProfile()
+                        } else {
+                            Log.e("InitialScreen", "Error en login con Google", task.exception)
+                        }
+                    }
+            }
+        } catch (e: Exception) {
+            Log.e("InitialScreen", "Google Sign In falló", e)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -38,13 +77,12 @@ fun InitialScreen(navigateToLogin: () -> Unit = {}, navigateToSignUp: () -> Unit
             .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
-
     ) {
         Spacer(modifier = Modifier.weight(1f))
         Image(
             painter = painterResource(id = R.drawable.entrenaria_logo),
             contentDescription = "Logo",
-            Modifier.size(200.dp)
+            modifier = Modifier.size(200.dp)
         )
         Text(
             "Entrena de forma inteligente. Progresa sin límites.",
@@ -53,20 +91,25 @@ fun InitialScreen(navigateToLogin: () -> Unit = {}, navigateToSignUp: () -> Unit
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.weight(1f))
+
         Button(
-            onClick = {navigateToSignUp()}, modifier = Modifier
+            onClick = { navigateToSignUp() },
+            modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
                 .padding(horizontal = 32.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color.White)
-        )
-        {
-            Text("Sign up free", color = MaterialTheme.colorScheme.primary)
-
+        ) {
+            Text("Regístrate con Email", color = MaterialTheme.colorScheme.primary)
         }
+
         Spacer(Modifier.height(8.dp))
+
         Button(
-            onClick = { navigateToSignUp() },
+            onClick = {
+                val signInIntent = googleSignInClient.signInIntent
+                launcher.launch(signInIntent)
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
@@ -76,31 +119,29 @@ fun InitialScreen(navigateToLogin: () -> Unit = {}, navigateToSignUp: () -> Unit
             Box(modifier = Modifier.fillMaxWidth()) {
                 Image(
                     painter = painterResource(id = R.drawable.google),
-                    contentDescription = "Sign up with Google",
+                    contentDescription = "Continue with Google",
                     modifier = Modifier
                         .padding(start = 16.dp)
                         .size(16.dp)
                         .align(Alignment.CenterStart)
                 )
-                Text("Sign up free", color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.align(Alignment.Center))
+                Text(
+                    "Continúa con Google",
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.align(Alignment.Center)
+                )
             }
         }
 
         Text(
             text = "Log In",
             color = Color.Black,
-            modifier = Modifier.padding(24.dp).clickable { navigateToLogin() },
-            fontWeight = FontWeight.Bold)
+            modifier = Modifier
+                .padding(24.dp)
+                .clickable { navigateToLogin() },
+            fontWeight = FontWeight.Bold
+        )
+
         Spacer(modifier = Modifier.weight(1f))
-
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun InitialScreenPreview() {
-    EntrenarIATheme {
-        InitialScreen()
     }
 }

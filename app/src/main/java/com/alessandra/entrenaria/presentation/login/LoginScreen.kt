@@ -2,6 +2,7 @@ package com.alessandra.entrenaria.presentation.login
 
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,9 +31,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 
 @Composable
-fun LoginScreen(auth: FirebaseAuth) {
+fun LoginScreen(auth: FirebaseAuth, navigateBack: () -> Unit = {}) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
@@ -48,7 +50,11 @@ fun LoginScreen(auth: FirebaseAuth) {
                 painter = painterResource(R.drawable.arrow_back),
                 contentDescription = "",
                 tint = Color.White,
-                modifier = Modifier.padding(vertical = 24.dp).size(24.dp))
+                modifier = Modifier
+                    .padding(vertical = 24.dp)
+                    .size(24.dp)
+                    .clickable { navigateBack() }
+            )
             Spacer(modifier = Modifier.weight(1f))
         }
 
@@ -58,6 +64,7 @@ fun LoginScreen(auth: FirebaseAuth) {
             value = email,
             onValueChange = {email = it},
             modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                 unfocusedContainerColor = MaterialTheme.colorScheme.secondaryContainer
@@ -69,6 +76,9 @@ fun LoginScreen(auth: FirebaseAuth) {
         TextField(
             value = password,
             onValueChange = {password = it},
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                 unfocusedContainerColor = MaterialTheme.colorScheme.secondaryContainer

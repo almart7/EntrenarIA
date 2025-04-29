@@ -1,5 +1,6 @@
 package com.alessandra.entrenaria.presentation.profile
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,11 +12,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.core.operation.Merge
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 
 @Composable
 fun EditProfileScreen(
@@ -29,7 +31,7 @@ fun EditProfileScreen(
 
     var name by remember { mutableStateOf("") }
     var age by remember { mutableStateOf("") }
-    var genderOptions = listOf("Hombre", "Mujer", "Otro")
+    val genderOptions = listOf("Hombre", "Mujer", "Otro")
     var selectedGender by remember { mutableStateOf<String?>(null) }
     var expanded by remember { mutableStateOf(false) }
 
@@ -114,18 +116,20 @@ fun EditProfileScreen(
                 val user = auth.currentUser
                 if (user != null) {
                     val uid = user.uid
-                    val updates = hashMapOf<String, Any?>(
-                        "name" to name.ifBlank { null },
-                        "age" to age.toIntOrNull(),
-                        "gender" to selectedGender
+                    val userData = hashMapOf<String, Any>(
+                        "name" to name,
+                        "age" to (age.toIntOrNull() ?: 0),
+                        "gender" to (selectedGender ?: "")
                     )
+
                     db.collection("users").document(uid)
-                        .update(updates)
+                        .set(userData, SetOptions.merge()) // <-- Merge para no sobreescribir todo
                         .addOnSuccessListener {
+                            Toast.makeText(context, "Perfil actualizado exitosamente", Toast.LENGTH_SHORT).show()
                             onProfileUpdated()
                         }
                         .addOnFailureListener { e ->
-                            // Puedes mostrar error aquí si quieres
+                            Toast.makeText(context, "Error al actualizar perfil", Toast.LENGTH_SHORT).show()
                         }
                 }
             },

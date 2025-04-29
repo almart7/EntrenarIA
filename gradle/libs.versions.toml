@@ -14,6 +14,7 @@ googleAndroidLibrariesMapsplatformSecretsGradlePlugin = "2.0.1"
 navigationCompose = "2.8.9"
 kotlinSerialization = "1.8.0"
 playServicesAuth = "20.7.0"
+firebaseDatabaseKtx = "21.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -38,6 +39,7 @@ play-services-auth = { module = "com.google.android.gms:play-services-auth", ver
 
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 kotlin-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinSerialization" }
+firebase-database-ktx = { group = "com.google.firebase", name = "firebase-database-ktx", version.ref = "firebaseDatabaseKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

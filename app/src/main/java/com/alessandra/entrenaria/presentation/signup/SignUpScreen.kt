@@ -1,5 +1,6 @@
 package com.alessandra.entrenaria.presentation.signup
 
+import android.util.Log
 import android.util.Patterns
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -19,6 +20,8 @@ import androidx.compose.ui.unit.sp
 import com.alessandra.entrenaria.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 
 @Composable
 fun SignUpScreen(
@@ -104,6 +107,28 @@ fun SignUpScreen(
                     auth.createUserWithEmailAndPassword(email, password)
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
+                                // Crear el usuario en Firestore
+                                val db = Firebase.firestore
+
+                                val user = FirebaseAuth.getInstance().currentUser
+                                user?.let {
+                                    val userData = hashMapOf(
+                                        "uid" to it.uid,
+                                        "email" to it.email
+                                    )
+
+                                    db.collection("users")
+                                        .document(it.uid)
+                                        .set(userData)
+                                        .addOnSuccessListener {
+                                            Log.d("Firestore", "Usuario creado en Firestore correctamente")
+                                        }
+                                        .addOnFailureListener { e ->
+                                            Log.w("Firestore", "Error al crear usuario en Firestore", e)
+                                        }
+                                }
+
+                                // ir a la pagina de perfil
                                 navigateToProfile()
                             } else {
                                 val exception = task.exception

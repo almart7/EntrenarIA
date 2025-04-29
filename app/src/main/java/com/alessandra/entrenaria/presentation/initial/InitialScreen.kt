@@ -28,6 +28,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 
 @Composable
 fun InitialScreen(
@@ -37,6 +39,7 @@ fun InitialScreen(
 ) {
     val context = LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() }
+    val db = remember { FirebaseFirestore.getInstance() }
 
     val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
         .requestIdToken(stringResource(id = R.string.default_web_client_id))
@@ -57,9 +60,44 @@ fun InitialScreen(
                 auth.signInWithCredential(credential)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
-                            // Usuario autenticado con éxito
-                            Log.d("InitialScreen", "Login exitoso: ${auth.currentUser?.email}")
-                            navigateToProfile()
+                            val firebaseUser = auth.currentUser
+                            if (firebaseUser != null) {
+                                val uid = firebaseUser.uid
+                                val email = firebaseUser.email
+
+                                val userDocRef = db.collection("users").document(uid)
+
+                                userDocRef.get()
+                                    .addOnSuccessListener { document ->
+                                        if (document.exists()) {
+                                            Log.d("InitialScreen", "Usuario ya existe en Firestore")
+                                            // Ya existe, navegamos directamente
+                                            navigateToProfile()
+                                        } else {
+                                            val newUser = hashMapOf(
+                                                "uid" to uid,
+                                                "email" to email,
+                                                "name" to "",
+                                                "age" to 0,
+                                                "gender" to ""
+                                            )
+
+                                            userDocRef.set(newUser, SetOptions.merge())
+                                                .addOnSuccessListener {
+                                                    Log.d("InitialScreen", "Nuevo usuario creado en Firestore")
+                                                    navigateToProfile()
+                                                }
+                                                .addOnFailureListener { e ->
+                                                    Log.e("InitialScreen", "Error al crear nuevo usuario", e)
+                                                    navigateToProfile() // Navegamos aunque falle la creación
+                                                }
+                                        }
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Log.e("InitialScreen", "Error verificando existencia de usuario", e)
+                                        navigateToProfile()
+                                    }
+                            }
                         } else {
                             Log.e("InitialScreen", "Error en login con Google", task.exception)
                         }
@@ -79,17 +117,21 @@ fun InitialScreen(
         verticalArrangement = Arrangement.Center,
     ) {
         Spacer(modifier = Modifier.weight(1f))
+
         Image(
             painter = painterResource(id = R.drawable.entrenaria_logo),
             contentDescription = "Logo",
             modifier = Modifier.size(200.dp)
         )
+
         Text(
             "Entrena de forma inteligente. Progresa sin límites.",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 16.dp)
         )
+
         Spacer(modifier = Modifier.weight(1f))
 
         Button(
@@ -119,7 +161,7 @@ fun InitialScreen(
             Box(modifier = Modifier.fillMaxWidth()) {
                 Image(
                     painter = painterResource(id = R.drawable.google),
-                    contentDescription = "Continue with Google",
+                    contentDescription = "Continúa con Google",
                     modifier = Modifier
                         .padding(start = 16.dp)
                         .size(16.dp)

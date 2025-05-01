@@ -1,4 +1,4 @@
-package com.alessandra.entrenaria.model
+package com.alessandra.entrenaria.data.model
 
 data class User(
     val uid: String = "",

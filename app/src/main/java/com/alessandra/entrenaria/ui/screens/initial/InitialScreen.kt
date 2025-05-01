@@ -1,4 +1,4 @@
-package com.alessandra.entrenaria.presentation.initial
+package com.alessandra.entrenaria.ui.screens.initial
 
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -7,15 +7,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -71,7 +67,6 @@ fun InitialScreen(
                                     .addOnSuccessListener { document ->
                                         if (document.exists()) {
                                             Log.d("InitialScreen", "Usuario ya existe en Firestore")
-                                            // Ya existe, navegamos directamente
                                             navigateToProfile()
                                         } else {
                                             val newUser = hashMapOf(
@@ -89,7 +84,7 @@ fun InitialScreen(
                                                 }
                                                 .addOnFailureListener { e ->
                                                     Log.e("InitialScreen", "Error al crear nuevo usuario", e)
-                                                    navigateToProfile() // Navegamos aunque falle la creación
+                                                    navigateToProfile()
                                                 }
                                         }
                                     }
@@ -126,6 +121,7 @@ fun InitialScreen(
 
         Text(
             "Entrena de forma inteligente. Progresa sin límites.",
+            color = MaterialTheme.colorScheme.onPrimary,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
@@ -140,23 +136,25 @@ fun InitialScreen(
                 .fillMaxWidth()
                 .height(48.dp)
                 .padding(horizontal = 32.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
         ) {
-            Text("Regístrate con Email", color = MaterialTheme.colorScheme.primary)
+            Text("Regístrate con Email", color = MaterialTheme.colorScheme.onSecondary)
         }
 
         Spacer(Modifier.height(8.dp))
 
         Button(
             onClick = {
-                val signInIntent = googleSignInClient.signInIntent
-                launcher.launch(signInIntent)
+                googleSignInClient.signOut().addOnCompleteListener {
+                    val signInIntent = googleSignInClient.signInIntent
+                    launcher.launch(signInIntent)
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
                 .padding(horizontal = 32.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
                 Image(
@@ -169,7 +167,7 @@ fun InitialScreen(
                 )
                 Text(
                     "Continúa con Google",
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSecondary,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -177,7 +175,7 @@ fun InitialScreen(
 
         Text(
             text = "Log In",
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier
                 .padding(24.dp)
                 .clickable { navigateToLogin() },

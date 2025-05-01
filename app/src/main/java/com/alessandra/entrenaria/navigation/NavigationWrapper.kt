@@ -4,11 +4,11 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.alessandra.entrenaria.presentation.initial.InitialScreen
-import com.alessandra.entrenaria.presentation.login.LoginScreen
-import com.alessandra.entrenaria.presentation.profile.EditProfileScreen
-import com.alessandra.entrenaria.presentation.profile.ProfileScreen
-import com.alessandra.entrenaria.presentation.signup.SignUpScreen
+import com.alessandra.entrenaria.ui.screens.initial.InitialScreen
+import com.alessandra.entrenaria.ui.screens.login.LoginScreen
+import com.alessandra.entrenaria.ui.screens.profile.EditProfileScreen
+import com.alessandra.entrenaria.ui.screens.profile.ProfileScreen
+import com.alessandra.entrenaria.ui.screens.signup.SignUpScreen
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable

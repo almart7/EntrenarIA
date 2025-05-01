@@ -1,4 +1,4 @@
-package com.alessandra.entrenaria.presentation.profile
+package com.alessandra.entrenaria.ui.screens.profile
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -9,13 +9,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.core.operation.Merge
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 
@@ -38,14 +36,14 @@ fun EditProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
             text = "Editar Perfil",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 32.sp,
             modifier = Modifier.padding(bottom = 32.dp)
         )
@@ -86,7 +84,7 @@ fun EditProfileScreen(
         Box(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = selectedGender ?: "Seleccionar Género",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { expanded = true }
@@ -123,12 +121,12 @@ fun EditProfileScreen(
                     )
 
                     db.collection("users").document(uid)
-                        .set(userData, SetOptions.merge()) // <-- Merge para no sobreescribir todo
+                        .set(userData, SetOptions.merge())
                         .addOnSuccessListener {
                             Toast.makeText(context, "Perfil actualizado exitosamente", Toast.LENGTH_SHORT).show()
                             onProfileUpdated()
                         }
-                        .addOnFailureListener { e ->
+                        .addOnFailureListener {
                             Toast.makeText(context, "Error al actualizar perfil", Toast.LENGTH_SHORT).show()
                         }
                 }
@@ -143,9 +141,9 @@ fun EditProfileScreen(
         Button(
             onClick = { onCancel() },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
         ) {
-            Text(text = "Cancelar")
+            Text(text = "Cancelar", color = MaterialTheme.colorScheme.onSecondary)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -156,9 +154,9 @@ fun EditProfileScreen(
                 onLogout()
             },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
         ) {
-            Text(text = "Cerrar sesión")
+            Text(text = "Cerrar sesión", color = MaterialTheme.colorScheme.onError)
         }
     }
 }

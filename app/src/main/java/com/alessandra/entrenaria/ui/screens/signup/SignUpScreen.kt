@@ -1,4 +1,4 @@
-package com.alessandra.entrenaria.presentation.signup
+package com.alessandra.entrenaria.ui.screens.signup
 
 import android.util.Log
 import android.util.Patterns
@@ -10,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -36,7 +35,7 @@ fun SignUpScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 32.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -47,7 +46,7 @@ fun SignUpScreen(
             Icon(
                 painter = painterResource(R.drawable.arrow_back),
                 contentDescription = "Back",
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier
                     .padding(vertical = 24.dp)
                     .size(24.dp)
@@ -58,7 +57,7 @@ fun SignUpScreen(
 
         Text(
             text = "Email",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold,
             fontSize = 40.sp
         )
@@ -77,7 +76,7 @@ fun SignUpScreen(
 
         Text(
             text = "Password",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold,
             fontSize = 40.sp
         )
@@ -107,16 +106,13 @@ fun SignUpScreen(
                     auth.createUserWithEmailAndPassword(email, password)
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
-                                // Crear el usuario en Firestore
                                 val db = Firebase.firestore
-
                                 val user = FirebaseAuth.getInstance().currentUser
                                 user?.let {
                                     val userData = hashMapOf(
                                         "uid" to it.uid,
                                         "email" to it.email
                                     )
-
                                     db.collection("users")
                                         .document(it.uid)
                                         .set(userData)
@@ -127,8 +123,6 @@ fun SignUpScreen(
                                             Log.w("Firestore", "Error al crear usuario en Firestore", e)
                                         }
                                 }
-
-                                // ir a la pagina de perfil
                                 navigateToProfile()
                             } else {
                                 val exception = task.exception
@@ -151,7 +145,6 @@ fun SignUpScreen(
     }
 }
 
-// 🔥 Función utilitaria para mostrar Toast
 private fun showToast(context: android.content.Context, message: String) {
     Toast.makeText(context, message, Toast.LENGTH_LONG).show()
 }

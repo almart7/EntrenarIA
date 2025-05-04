@@ -1,6 +1,6 @@
 package com.alessandra.entrenaria.navigation
 
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -15,18 +15,34 @@ import com.alessandra.entrenaria.ui.screens.trainingDays.TrainingDaysScreen
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun NavigationWrapper(auth: FirebaseAuth, isUserLoggedIn: Boolean) {
+fun NavigationWrapper(auth: FirebaseAuth) {
     val navController = rememberNavController()
+
+    // 🔁 Estado que observa el login en tiempo real
+    // Evita que el usuario pueda volver atrás  una vez hecho logout
+    val isUserLoggedIn = remember { mutableStateOf(auth.currentUser != null) }
+
+    DisposableEffect(Unit) {
+        val listener = FirebaseAuth.AuthStateListener {
+            isUserLoggedIn.value = it.currentUser != null
+        }
+        auth.addAuthStateListener(listener)
+        onDispose { auth.removeAuthStateListener(listener) }
+    }
 
     NavHost(
         navController = navController,
-        startDestination = if (isUserLoggedIn) Home else Initial
+        startDestination = if (isUserLoggedIn.value) Home else Initial
     ) {
         composable<Initial> {
             InitialScreen(
                 navigateToLogin = { navController.navigate(Login) },
                 navigateToSignUp = { navController.navigate(SignUp) },
-                naviageToHome = { navController.navigate(Home) }
+                naviageToHome = {
+                    navController.navigate(Home) {
+                        popUpTo(Initial) { inclusive = true }
+                    }
+                }
             )
         }
 
@@ -34,7 +50,11 @@ fun NavigationWrapper(auth: FirebaseAuth, isUserLoggedIn: Boolean) {
             LoginScreen(
                 auth = auth,
                 navigateBack = { navController.popBackStack() },
-                navigateToHome = { navController.navigate(Home) }
+                navigateToHome = {
+                    navController.navigate(Home) {
+                        popUpTo(Login) { inclusive = true }
+                    }
+                }
             )
         }
 
@@ -42,7 +62,11 @@ fun NavigationWrapper(auth: FirebaseAuth, isUserLoggedIn: Boolean) {
             SignUpScreen(
                 auth = auth,
                 navigateBack = { navController.popBackStack() },
-                navigateToHome = { navController.navigate(Home) }
+                navigateToHome = {
+                    navController.navigate(Home) {
+                        popUpTo(SignUp) { inclusive = true }
+                    }
+                }
             )
         }
 
@@ -50,8 +74,9 @@ fun NavigationWrapper(auth: FirebaseAuth, isUserLoggedIn: Boolean) {
             ProfileScreen(
                 navController = navController,
                 onLogout = {
+                    auth.signOut()
                     navController.navigate(Initial) {
-                        popUpTo(Profile) { inclusive = true }
+                        popUpTo(0) { inclusive = true } // 🔥 limpia toda la pila
                     }
                 }
             )
@@ -102,6 +127,5 @@ fun NavigationWrapper(auth: FirebaseAuth, isUserLoggedIn: Boolean) {
                 navController = navController
             )
         }
-
     }
 }

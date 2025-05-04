@@ -8,13 +8,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import com.alessandra.entrenaria.navigation.Profile
+import com.alessandra.entrenaria.ui.components.BottomNavigationBar
+import com.alessandra.entrenaria.ui.components.EditProfileDialog
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun ProfileScreen(
-    onLogout: () -> Unit = {},
-    onEditProfile: () -> Unit = {}
+    navController: NavController,
+    onLogout: () -> Unit = {}
 ) {
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
@@ -23,8 +27,10 @@ fun ProfileScreen(
     var name by remember { mutableStateOf<String?>(null) }
     var gender by remember { mutableStateOf<String?>(null) }
     var age by remember { mutableStateOf<Int?>(null) }
+    var showEditDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
+    // ✅ Aquí defines la función
+    fun loadUserData() {
         val user = auth.currentUser
         if (user != null) {
             val uid = user.uid
@@ -38,73 +44,76 @@ fun ProfileScreen(
                         age = document.getLong("age")?.toInt()
                     }
                 }
-                .addOnFailureListener {
-                    // Manejo de error opcional
-                }
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Perfil",
-            color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 32.sp,
-            modifier = Modifier.padding(bottom = 32.dp)
-        )
+    // Se ejecuta al entrar a la pantalla
+    LaunchedEffect(Unit) {
+        loadUserData()
+    }
 
-        Text(
-            text = "Email: $email",
-            color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 20.sp,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        Text(
-            text = "Nombre: ${name ?: "No definido"}",
-            color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 20.sp,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        Text(
-            text = "Género: ${gender ?: "No definido"}",
-            color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 20.sp,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        Text(
-            text = "Edad: ${age?.toString() ?: "No definido"}",
-            color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 20.sp,
-            modifier = Modifier.padding(bottom = 32.dp)
-        )
-
-        Button(
-            onClick = { onEditProfile() },
+    Scaffold(
+        bottomBar = {
+            BottomNavigationBar(
+                navController = navController,
+                currentDestination = Profile
+            )
+        }
+    ) { padding ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(padding)
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Text(text = "Editar Perfil")
+            Text(
+                text = "Perfil",
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 32.sp,
+                modifier = Modifier.padding(bottom = 32.dp)
+            )
+
+            Text("Email: $email", fontSize = 20.sp, modifier = Modifier.padding(bottom = 16.dp))
+            Text("Nombre: ${name ?: "No definido"}", fontSize = 20.sp, modifier = Modifier.padding(bottom = 16.dp))
+            Text("Género: ${gender ?: "No definido"}", fontSize = 20.sp, modifier = Modifier.padding(bottom = 16.dp))
+            Text("Edad: ${age?.toString() ?: "No definido"}", fontSize = 20.sp, modifier = Modifier.padding(bottom = 32.dp))
+
+            Button(
+                onClick = { showEditDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            ) {
+                Text("Editar Perfil")
+            }
+
+            Button(
+                onClick = {
+                    auth.signOut()
+                    onLogout()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text("Cerrar sesión", color = MaterialTheme.colorScheme.onError)
+            }
         }
 
-        Button(
-            onClick = {
-                auth.signOut()
-                onLogout()
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-        ) {
-            Text(text = "Cerrar sesión", color = MaterialTheme.colorScheme.onError)
+        if (showEditDialog) {
+            EditProfileDialog(
+                currentName = name ?: "",
+                currentAge = age,
+                currentGender = gender,
+                onDismiss = { showEditDialog = false },
+                onProfileUpdated = {
+                    showEditDialog = false
+                    loadUserData() // Refresca los datos del perfil tras actualizarlos
+                }
+            )
+
         }
     }
 }

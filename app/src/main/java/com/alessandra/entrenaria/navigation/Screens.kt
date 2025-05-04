@@ -15,4 +15,19 @@ object SignUp
 object Profile
 
 @Serializable
-object EditProfile
+object Home
+
+@Serializable
+data class TrainingDays(val periodId: String)
+
+@Serializable
+data class ExerciseList(val periodId: String, val dayId: String)
+
+@Serializable
+data class NewExercise(
+    val periodId: String,
+    val dayId: String
+)
+
+@Serializable
+object Chat

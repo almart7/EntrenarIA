@@ -11,7 +11,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class TrainingViewModel(private val repository: TrainingRepository, private val userId: String) : ViewModel() {
+class TrainingViewModel(
+    private val repository: TrainingRepository,
+    private val userId: String
+) : ViewModel() {
 
     private val _trainingPeriods = MutableStateFlow<List<TrainingPeriod>>(emptyList())
     val trainingPeriods: StateFlow<List<TrainingPeriod>> = _trainingPeriods.asStateFlow()
@@ -34,30 +37,62 @@ class TrainingViewModel(private val repository: TrainingRepository, private val 
         }
     }
 
-    fun loadExercises(periodId: String, dayId: String) {
+    fun loadExercises(dayId: String) {
         viewModelScope.launch {
-            _exercises.value = repository.getExercises(userId, periodId, dayId)
+            _exercises.value = repository.getExercises(userId, dayId)
         }
     }
 
     fun addTrainingPeriod(period: TrainingPeriod) {
         viewModelScope.launch {
-            repository.addTrainingPeriod(userId, period)
+            repository.addTrainingPeriod(period.copy(userId = userId))
             loadTrainingPeriods()
         }
     }
 
-    fun addTrainingDay(periodId: String, day: TrainingDay) {
+    fun addTrainingDay(day: TrainingDay) {
         viewModelScope.launch {
-            repository.addTrainingDay(userId, periodId, day)
-            loadTrainingDays(periodId)
+            repository.addTrainingDay(day.copy(userId = userId))
+            loadTrainingDays(day.periodId)
         }
     }
 
-    fun addExercise(periodId: String, dayId: String, exercise: Exercise) {
+    fun addExercise(exercise: Exercise) {
         viewModelScope.launch {
-            repository.addExercise(userId, periodId, dayId, exercise)
-            loadExercises(periodId, dayId)
+            repository.addExercise(exercise.copy(userId = userId))
+            loadExercises(exercise.dayId)
         }
     }
+
+    fun deleteTrainingPeriodWithChildren(periodId: String) {
+        viewModelScope.launch {
+            repository.deleteTrainingPeriodWithChildren(userId, periodId)
+            loadTrainingPeriods()
+        }
+    }
+
+    fun deleteTrainingDay(dayId: String) {
+        viewModelScope.launch {
+            try {
+                repository.deleteTrainingDay(dayId)
+                // Si quieres refrescar los días visibles:
+                _trainingDays.value = _trainingDays.value.filterNot { it.id == dayId }
+            } catch (e: Exception) {
+                // Manejo de error opcional
+            }
+        }
+    }
+
+    fun deleteExercise(exerciseId: String) {
+        viewModelScope.launch {
+            try {
+                repository.deleteExercise(exerciseId)
+                _exercises.value = _exercises.value.filterNot { it.id == exerciseId }
+            } catch (e: Exception) {
+                // Manejo opcional: puedes mostrar un error en la UI
+            }
+        }
+    }
+
+
 }

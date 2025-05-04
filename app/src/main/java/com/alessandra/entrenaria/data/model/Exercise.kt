@@ -4,8 +4,13 @@ import com.google.firebase.firestore.DocumentId
 
 data class Exercise(
     @DocumentId val id: String = "",
+    val userId: String = "",
+    val dayId: String = "",
+    val periodId: String = "",
     val name: String = "",
     val sets: List<ExerciseSet> = emptyList(),
-    val weight: Float? = null, // Se planifica a nivel del ejercicio
+    val weight: Float? = null,
     val notes: String = ""
 )
+
+

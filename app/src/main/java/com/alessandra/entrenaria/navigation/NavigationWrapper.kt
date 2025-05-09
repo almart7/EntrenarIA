@@ -4,6 +4,7 @@ import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.alessandra.entrenaria.ui.screens.chat.ChatScreen
 import com.alessandra.entrenaria.ui.screens.exercises.ExerciseListScreen
 import com.alessandra.entrenaria.ui.screens.exercises.NewExerciseScreen
 import com.alessandra.entrenaria.ui.screens.home.HomeScreen
@@ -18,7 +19,7 @@ import com.google.firebase.auth.FirebaseAuth
 fun NavigationWrapper(auth: FirebaseAuth) {
     val navController = rememberNavController()
 
-    // 🔁 Estado que observa el login en tiempo real
+    // Estado que observa el login en tiempo real
     // Evita que el usuario pueda volver atrás  una vez hecho logout
     val isUserLoggedIn = remember { mutableStateOf(auth.currentUser != null) }
 
@@ -124,6 +125,14 @@ fun NavigationWrapper(auth: FirebaseAuth) {
                 userId = userId,
                 periodId = periodId,
                 dayId = dayId,
+                navController = navController
+            )
+        }
+
+        composable<Chat> {
+            val userId = auth.currentUser?.uid ?: return@composable
+            ChatScreen(
+                userId = userId,
                 navController = navController
             )
         }

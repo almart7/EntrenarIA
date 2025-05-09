@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.android.libraries.mapsplatform.secrets.gradle.plugin)
     alias(libs.plugins.jetbrainsKotlinSerialization)
-    // Add the Google services Gradle plugin
+    // Para permitir el login con google
     id("com.google.gms.google-services")
 
 }
@@ -62,7 +62,8 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.play.services.auth)
-    implementation(libs.firebase.database.ktx)
+    implementation(libs.firebase.realtime)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -74,5 +75,8 @@ dependencies {
     // Import the Firebase BoM
     // When using the BoM, don't specify versions in Firebase dependencies
     implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
+
+    // GeminI
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
 }

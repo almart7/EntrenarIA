@@ -169,4 +169,11 @@ class TrainingRepository(private val db: FirebaseFirestore = FirebaseFirestore.g
         // Borrar el periodo
         deleteTrainingPeriod(periodId)
     }
+
+    // --------- ACTUALIZACIÓN ---------
+    suspend fun updateExercise(exercise: Exercise) {
+        val docRef = db.collection("exercises").document(exercise.id)
+        docRef.set(exercise) // Sobrescribe con los nuevos datos
+    }
+
 }

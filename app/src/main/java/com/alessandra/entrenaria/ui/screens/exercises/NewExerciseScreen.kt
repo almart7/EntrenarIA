@@ -22,6 +22,7 @@ import com.alessandra.entrenaria.ui.components.BottomNavigationBar
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModel
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModelFactory
 import com.entrenaria.models.TrainingRepository
+import kotlinx.coroutines.launch
 
 data class ExerciseSetUiModel(
     var targetRepsMin: String = "",
@@ -45,6 +46,9 @@ fun NewExerciseScreen(
     var notes by remember { mutableStateOf("") }
     val sets = remember { mutableStateListOf(ExerciseSetUiModel()) }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Nuevo ejercicio") })
@@ -54,7 +58,8 @@ fun NewExerciseScreen(
                 navController = navController,
                 currentDestination = NewExercise(periodId, dayId)
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -118,7 +123,8 @@ fun NewExerciseScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         OutlinedTextField(
                             value = set.targetRepsMin,
@@ -141,6 +147,23 @@ fun NewExerciseScreen(
                             modifier = Modifier.weight(1f),
                             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
                         )
+
+                        IconButton(onClick = {
+                            val duplicatedSet = set.copy()
+                            sets.add(index + 1, duplicatedSet)
+
+                            scope.launch {
+                                val result = snackbarHostState.showSnackbar(
+                                    message = "Set duplicado",
+                                    actionLabel = "Deshacer"
+                                )
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    sets.removeAt(index + 1)
+                                }
+                            }
+                        }) {
+                            Icon(Icons.Default.Add, contentDescription = "Duplicar set")
+                        }
 
                         IconButton(onClick = { sets.removeAt(index) }) {
                             Icon(Icons.Default.Delete, contentDescription = "Eliminar set")
@@ -180,3 +203,4 @@ fun NewExerciseScreen(
         }
     }
 }
+

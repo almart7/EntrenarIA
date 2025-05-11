@@ -5,16 +5,21 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.alessandra.entrenaria.data.model.Exercise
 import com.alessandra.entrenaria.navigation.ExerciseList
 import com.alessandra.entrenaria.navigation.NewExercise
 import com.alessandra.entrenaria.ui.components.BottomNavigationBar
@@ -40,6 +45,11 @@ fun ExerciseListScreen(
     var selectionMode by remember { mutableStateOf(false) }
     val selectedExercises = remember { mutableStateListOf<String>() }
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    var showRepsDialog by remember { mutableStateOf(false) }
+    var selectedExercise by remember { mutableStateOf<Exercise?>(null) }
+    var actualRepsInputs by remember { mutableStateOf<List<String>>(emptyList()) }
+    var exerciseNotes by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         viewModel.loadExercises(dayId)
@@ -84,6 +94,7 @@ fun ExerciseListScreen(
             LazyColumn {
                 items(exercises) { exercise ->
                     val isSelected = selectedExercises.contains(exercise.id)
+                    val hasActualReps = exercise.sets.any { it.actualReps != null }
 
                     Card(
                         modifier = Modifier
@@ -95,8 +106,6 @@ fun ExerciseListScreen(
                                         if (isSelected) selectedExercises.remove(exercise.id)
                                         else selectedExercises.add(exercise.id)
                                         if (selectedExercises.isEmpty()) selectionMode = false
-                                    } else {
-                                        // Aquí puedes abrir detalles o edición si lo deseas
                                     }
                                 },
                                 onLongClick = {
@@ -107,12 +116,52 @@ fun ExerciseListScreen(
                                 }
                             )
                     ) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text(exercise.name, style = MaterialTheme.typography.titleMedium)
-                            exercise.weight?.let {
-                                Text("Peso: ${it} kg")
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(exercise.name, style = MaterialTheme.typography.titleMedium)
+                                exercise.weight?.let {
+                                    Text("Peso: ${it} kg")
+                                }
+                                Text("Sets: ${exercise.sets.size}")
                             }
-                            Text("Sets: ${exercise.sets.size}")
+
+                            Row {
+                                if (selectionMode) {
+                                    Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = {
+                                            if (it) selectedExercises.add(exercise.id)
+                                            else selectedExercises.remove(exercise.id)
+                                            if (selectedExercises.isEmpty()) selectionMode = false
+                                        }
+                                    )
+                                } else {
+                                    IconButton(onClick = {
+                                        selectedExercise = exercise
+                                        actualRepsInputs = exercise.sets.map { it.actualReps?.toString() ?: "" }
+                                        exerciseNotes = exercise.notes
+                                        showRepsDialog = true
+                                    }) {
+                                        if (hasActualReps) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "Repeticiones registradas",
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        } else {
+                                            Icon(
+                                                imageVector = Icons.Default.PlayArrow,
+                                                contentDescription = "Registrar repeticiones"
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -146,6 +195,66 @@ fun ExerciseListScreen(
                         showDeleteDialog = false
                         selectionMode = false
                         selectedExercises.clear()
+                    }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
+        }
+
+        if (showRepsDialog && selectedExercise != null) {
+            AlertDialog(
+                onDismissRequest = { showRepsDialog = false },
+                title = { Text("Repeticiones realizadas") },
+                text = {
+                    Column {
+                        selectedExercise!!.sets.forEachIndexed { index, set ->
+                            OutlinedTextField(
+                                value = actualRepsInputs.getOrElse(index) { "" },
+                                onValueChange = { newValue ->
+                                    actualRepsInputs = actualRepsInputs.toMutableList().also {
+                                        it[index] = newValue
+                                    }
+                                },
+                                label = {
+                                    Text("Set ${index + 1} (objetivo: ${set.targetRepsMin}-${set.targetRepsMax})")
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedTextField(
+                            value = exerciseNotes,
+                            onValueChange = { exerciseNotes = it },
+                            label = { Text("Notas") },
+                            modifier = Modifier.fillMaxWidth(),
+                            maxLines = 4
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val updatedSets = selectedExercise!!.sets.mapIndexed { index, set ->
+                            val reps = actualRepsInputs.getOrNull(index)?.toIntOrNull()
+                            set.copy(actualReps = reps)
+                        }
+                        val updatedExercise = selectedExercise!!.copy(
+                            sets = updatedSets,
+                            notes = exerciseNotes
+                        )
+                        viewModel.updateExercise(updatedExercise)
+                        showRepsDialog = false
+                    }) {
+                        Text("Guardar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        showRepsDialog = false
                     }) {
                         Text("Cancelar")
                     }

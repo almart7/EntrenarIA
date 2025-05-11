@@ -94,5 +94,12 @@ class TrainingViewModel(
         }
     }
 
+    fun updateExercise(exercise: Exercise) {
+        viewModelScope.launch {
+            repository.updateExercise(exercise)
+            loadExercises(exercise.dayId) // Refresca la lista
+        }
+    }
+
 
 }

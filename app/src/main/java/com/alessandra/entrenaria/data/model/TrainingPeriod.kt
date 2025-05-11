@@ -5,11 +5,11 @@ import com.google.firebase.firestore.DocumentId
 
 data class TrainingPeriod(
     @DocumentId val id: String = "",
-    val userId: String = "", // 🔧 <- Añadido para consultas por usuario
+    val userId: String = "",
     val title: String = "",
     val startDate: Timestamp = Timestamp.now(),
     val endDate: Timestamp? = null,
-    val type: String = "custom", // "weekly", "monthly", etc.
+    val type: String = "custom",
     val notes: String = "",
     val createdAt: Timestamp = Timestamp.now()
 )

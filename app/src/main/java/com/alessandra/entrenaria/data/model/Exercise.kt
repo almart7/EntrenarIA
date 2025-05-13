@@ -1,5 +1,6 @@
 package com.alessandra.entrenaria.data.model
 
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
 
 data class Exercise(
@@ -10,7 +11,8 @@ data class Exercise(
     val name: String = "",
     val sets: List<ExerciseSet> = emptyList(),
     val weight: Float? = null,
-    val notes: String = ""
+    val notes: String = "",
+    val createdAt: Timestamp = Timestamp.now()
 )
 
 

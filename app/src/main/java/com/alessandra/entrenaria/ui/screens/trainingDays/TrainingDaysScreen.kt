@@ -1,6 +1,6 @@
 package com.alessandra.entrenaria.ui.screens.trainingDays
 
-import android.app.DatePickerDialog
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -20,11 +21,10 @@ import com.alessandra.entrenaria.data.model.TrainingDay
 import com.alessandra.entrenaria.navigation.ExerciseList
 import com.alessandra.entrenaria.navigation.TrainingDays
 import com.alessandra.entrenaria.ui.components.BottomNavigationBar
+import com.alessandra.entrenaria.ui.components.NewTrainingDayDialog
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModel
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModelFactory
 import com.entrenaria.models.TrainingRepository
-import com.google.firebase.Timestamp
-import java.util.*
 
 @Composable
 fun TrainingDaysScreen(
@@ -39,15 +39,19 @@ fun TrainingDaysScreen(
     )
 
     val trainingDays by viewModel.trainingDays.collectAsState()
+    val trainingPeriod by viewModel.trainingPeriod.collectAsState()
     val context = LocalContext.current
 
     var showDialog by remember { mutableStateOf(false) }
+    var dayToEdit by remember { mutableStateOf<TrainingDay?>(null) }
+
     var selectionMode by remember { mutableStateOf(false) }
     val selectedDays = remember { mutableStateListOf<String>() }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.loadTrainingDays(periodId)
+        viewModel.loadTrainingPeriodById(periodId)
     }
 
     Scaffold(
@@ -60,7 +64,10 @@ fun TrainingDaysScreen(
                     Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.onError)
                 }
             } else {
-                FloatingActionButton(onClick = { showDialog = true }) {
+                FloatingActionButton(onClick = {
+                    dayToEdit = null
+                    showDialog = true
+                }) {
                     Icon(Icons.Default.Add, contentDescription = "Agregar día")
                 }
             }
@@ -99,7 +106,17 @@ fun TrainingDaysScreen(
                                         else selectedDays.add(day.id)
                                         if (selectedDays.isEmpty()) selectionMode = false
                                     } else {
-                                        navController.navigate(ExerciseList(periodId = periodId, dayId = day.id))
+                                        // 👇 LOGS para depuración
+                                        Log.d("TrainingNav", "⏩ Intentando navegar a ExerciseList")
+                                        Log.d("TrainingNav", "🟢 periodId: $periodId")
+                                        Log.d("TrainingNav", "🟢 dayId: ${day.id}")
+
+                                        if (day.id.isNotBlank()) {
+                                            navController.navigate(ExerciseList(periodId, day.id))
+                                        } else {
+                                            Log.w("TrainingNav", "⚠️ ID del día está en blanco. Navegación cancelada.")
+                                            Toast.makeText(context, "Este día aún no está listo para navegar", Toast.LENGTH_SHORT).show()
+                                        }
                                     }
                                 },
                                 onLongClick = {
@@ -121,15 +138,24 @@ fun TrainingDaysScreen(
                                 Text("Fecha: ${day.date.toDate()}")
                             }
 
-                            if (selectionMode) {
-                                Checkbox(
-                                    checked = isSelected,
-                                    onCheckedChange = {
-                                        if (it) selectedDays.add(day.id)
-                                        else selectedDays.remove(day.id)
-                                        if (selectedDays.isEmpty()) selectionMode = false
+                            Row {
+                                if (selectionMode) {
+                                    Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = {
+                                            if (it) selectedDays.add(day.id)
+                                            else selectedDays.remove(day.id)
+                                            if (selectedDays.isEmpty()) selectionMode = false
+                                        }
+                                    )
+                                } else {
+                                    IconButton(onClick = {
+                                        dayToEdit = day
+                                        showDialog = true
+                                    }) {
+                                        Icon(Icons.Default.Edit, contentDescription = "Editar día")
                                     }
-                                )
+                                }
                             }
                         }
                     }
@@ -137,29 +163,39 @@ fun TrainingDaysScreen(
             }
         }
 
-        if (showDialog) {
-            val calendar = Calendar.getInstance()
-            var selectedDate by remember { mutableStateOf(calendar.time) }
+        if (showDialog && trainingPeriod != null) {
+            val startDate = trainingPeriod!!.startDate.toDate()
+            val endDate = trainingPeriod!!.endDate?.toDate()
 
-            DatePickerDialog(
-                context,
-                { _, year, month, day ->
-                    calendar.set(year, month, day)
-                    selectedDate = calendar.time
-                    val newDay = TrainingDay(
+            NewTrainingDayDialog(
+                userId = userId,
+                periodId = periodId,
+                day = dayToEdit,
+                minDate = startDate,
+                maxDate = endDate,
+                onDismiss = {
+                    showDialog = false
+                    dayToEdit = null
+                },
+                onConfirm = { label, notes, date ->
+                    val updated = dayToEdit
+                    val trainingDay = TrainingDay(
+                        id = updated?.id ?: "",
                         userId = userId,
                         periodId = periodId,
-                        date = Timestamp(selectedDate),
-                        label = "Día de entrenamiento",
-                        notes = ""
+                        date = date,
+                        label = label,
+                        notes = notes
                     )
-                    viewModel.addTrainingDay(newDay)
+                    if (updated == null) {
+                        viewModel.addTrainingDay(trainingDay)
+                    } else {
+                        viewModel.updateTrainingDay(trainingDay)
+                    }
                     showDialog = false
-                },
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-            ).show()
+                    dayToEdit = null
+                }
+            )
         }
 
         if (showDeleteDialog && selectedDays.isNotEmpty()) {

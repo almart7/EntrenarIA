@@ -25,11 +25,26 @@ class TrainingViewModel(
     private val _exercises = MutableStateFlow<List<Exercise>>(emptyList())
     val exercises: StateFlow<List<Exercise>> = _exercises.asStateFlow()
 
+    private val _exerciseToEdit = MutableStateFlow<Exercise?>(null)
+    val exerciseToEdit: StateFlow<Exercise?> = _exerciseToEdit
+
+    private val _trainingPeriod = MutableStateFlow<TrainingPeriod?>(null)
+    val trainingPeriod: StateFlow<TrainingPeriod?> = _trainingPeriod
+
     fun loadTrainingPeriods() {
         viewModelScope.launch {
             _trainingPeriods.value = repository.getTrainingPeriods(userId)
         }
     }
+
+
+    fun loadTrainingPeriodById(periodId: String) {
+        viewModelScope.launch {
+            _trainingPeriod.value = repository.getTrainingPeriodById(periodId)
+        }
+    }
+
+
 
     fun loadTrainingDays(periodId: String) {
         viewModelScope.launch {
@@ -100,6 +115,38 @@ class TrainingViewModel(
             loadExercises(exercise.dayId) // Refresca la lista
         }
     }
+
+    fun updateTrainingDay(day: TrainingDay) {
+        viewModelScope.launch {
+            repository.updateTrainingDay(day)
+            loadTrainingDays(day.periodId) // recargar lista tras actualizar
+        }
+    }
+
+
+    fun updateTrainingPeriod(period: TrainingPeriod) {
+        viewModelScope.launch {
+            repository.updateTrainingPeriod(period)
+            loadTrainingPeriods()
+        }
+    }
+
+
+    private val _exerciseNames = MutableStateFlow<List<String>>(emptyList())
+    val exerciseNames: StateFlow<List<String>> = _exerciseNames
+
+    fun fetchExerciseNames() {
+        viewModelScope.launch {
+            _exerciseNames.value = repository.getExerciseNamesForUser(userId)
+        }
+    }
+
+    fun loadExerciseById(id: String) {
+        viewModelScope.launch {
+            _exerciseToEdit.value = repository.getExerciseById(id)
+        }
+    }
+
 
 
 }

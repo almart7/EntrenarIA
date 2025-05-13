@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -160,6 +161,32 @@ fun ExerciseListScreen(
                                             )
                                         }
                                     }
+
+                                    // Botón de editar siempre visible, pero controlado por condición
+                                    IconButton(onClick = {
+                                        if (hasActualReps) {
+                                            Toast.makeText(
+                                                context,
+                                                "No se puede editar el objetivo de un ejercicio que ya has realizado.",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        } else {
+                                            navController.navigate(
+                                                NewExercise(
+                                                    periodId = periodId,
+                                                    dayId = dayId,
+                                                    exerciseId = exercise.id
+                                                )
+                                            )
+                                        }
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = "Editar ejercicio",
+                                            tint = if (hasActualReps) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                            else LocalContentColor.current
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -263,3 +290,4 @@ fun ExerciseListScreen(
         }
     }
 }
+

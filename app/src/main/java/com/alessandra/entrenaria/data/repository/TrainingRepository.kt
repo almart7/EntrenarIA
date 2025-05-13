@@ -7,6 +7,7 @@ import com.alessandra.entrenaria.data.model.Exercise
 import com.alessandra.entrenaria.data.model.ExerciseWithContext
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 import java.util.Date
 
@@ -39,6 +40,15 @@ class TrainingRepository(private val db: FirebaseFirestore = FirebaseFirestore.g
             .toObjects(TrainingPeriod::class.java)
     }
 
+    suspend fun getTrainingPeriodById(periodId: String): TrainingPeriod? {
+        val snapshot = db.collection("training_periods")
+            .document(periodId)
+            .get()
+            .await()
+
+        return snapshot.toObject(TrainingPeriod::class.java)?.copy(id = snapshot.id)
+    }
+
     suspend fun getTrainingDays(userId: String, periodId: String): List<TrainingDay> {
         return db.collection("training_days")
             .whereEqualTo("userId", userId)
@@ -52,10 +62,21 @@ class TrainingRepository(private val db: FirebaseFirestore = FirebaseFirestore.g
         return db.collection("exercises")
             .whereEqualTo("userId", userId)
             .whereEqualTo("dayId", dayId)
+            .orderBy("createdAt", Query.Direction.ASCENDING)
             .get()
             .await()
             .toObjects(Exercise::class.java)
     }
+
+    suspend fun getExerciseById(id: String): Exercise? {
+        val snapshot = db.collection("exercises")
+            .document(id)
+            .get()
+            .await()
+
+        return snapshot.toObject(Exercise::class.java)?.copy(id = snapshot.id)
+    }
+
 
     suspend fun getExercisesForPeriod(userId: String, periodId: String, name: String? = null): List<Exercise> {
         var query = db.collection("exercises")
@@ -67,6 +88,16 @@ class TrainingRepository(private val db: FirebaseFirestore = FirebaseFirestore.g
         }
 
         return query.get().await().toObjects(Exercise::class.java)
+    }
+
+    suspend fun getExerciseNamesForUser(userId: String): List<String> {
+        return db.collection("exercises")
+            .whereEqualTo("userId", userId)
+            .get()
+            .await()
+            .documents
+            .mapNotNull { it.getString("name") }
+            .distinct()
     }
 
     // consulta entrenamientos de los ultimos 30 dias para chat con GeminI
@@ -172,8 +203,25 @@ class TrainingRepository(private val db: FirebaseFirestore = FirebaseFirestore.g
 
     // --------- ACTUALIZACIÓN ---------
     suspend fun updateExercise(exercise: Exercise) {
-        val docRef = db.collection("exercises").document(exercise.id)
-        docRef.set(exercise) // Sobrescribe con los nuevos datos
+        db.collection("exercises")
+            .document(exercise.id)
+            .set(exercise)
+            .await() // 👈 importante para esperar la operación
     }
+
+    suspend fun updateTrainingDay(day: TrainingDay) {
+        db.collection("training_days")
+            .document(day.id)
+            .set(day)
+            .await()
+    }
+
+    suspend fun updateTrainingPeriod(period: TrainingPeriod) {
+        db.collection("training_periods")
+            .document(period.id)
+            .set(period)
+            .await()
+    }
+
 
 }

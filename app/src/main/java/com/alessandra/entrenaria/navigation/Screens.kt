@@ -26,7 +26,8 @@ data class ExerciseList(val periodId: String, val dayId: String)
 @Serializable
 data class NewExercise(
     val periodId: String,
-    val dayId: String
+    val dayId: String,
+    val exerciseId: String? = null
 )
 
 @Serializable

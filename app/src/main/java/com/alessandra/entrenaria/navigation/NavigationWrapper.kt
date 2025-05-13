@@ -120,11 +120,13 @@ fun NavigationWrapper(auth: FirebaseAuth) {
             val userId = auth.currentUser?.uid ?: return@composable
             val periodId = backStackEntry.arguments?.getString("periodId") ?: return@composable
             val dayId = backStackEntry.arguments?.getString("dayId") ?: return@composable
+            val exerciseId = backStackEntry.arguments?.getString("exerciseId")
 
             NewExerciseScreen(
                 userId = userId,
                 periodId = periodId,
                 dayId = dayId,
+                exerciseId = exerciseId,
                 navController = navController
             )
         }

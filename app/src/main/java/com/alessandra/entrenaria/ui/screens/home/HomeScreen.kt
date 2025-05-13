@@ -19,9 +19,12 @@ import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModel
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModelFactory
 import com.entrenaria.models.TrainingRepository
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.navigation.NavController
 import com.alessandra.entrenaria.ui.components.BottomNavigationBar
 import com.alessandra.entrenaria.navigation.Home
+import com.alessandra.entrenaria.util.formatAsDate
+
 
 
 @Composable
@@ -42,6 +45,7 @@ fun HomeScreen(
     var selectionMode by remember { mutableStateOf(false) }
     val selectedPeriods = remember { mutableStateListOf<String>() }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var periodToEdit by remember { mutableStateOf<TrainingPeriod?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.loadTrainingPeriods()
@@ -57,10 +61,14 @@ fun HomeScreen(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Eliminar",
-                        tint = MaterialTheme.colorScheme.onError)
+                        tint = MaterialTheme.colorScheme.onError
+                    )
                 }
             } else {
-                FloatingActionButton(onClick = { showDialog = true }) {
+                FloatingActionButton(onClick = {
+                    periodToEdit = null
+                    showDialog = true
+                }) {
                     Icon(Icons.Default.Add, contentDescription = "Agregar periodo")
                 }
             }
@@ -71,7 +79,6 @@ fun HomeScreen(
                 currentDestination = Home
             )
         }
-
     ) { padding ->
         Column(
             modifier = Modifier
@@ -98,10 +105,7 @@ fun HomeScreen(
                                     if (selectionMode) {
                                         if (isSelected) selectedPeriods.remove(period.id)
                                         else selectedPeriods.add(period.id)
-
-                                        if (selectedPeriods.isEmpty()) {
-                                            selectionMode = false
-                                        }
+                                        if (selectedPeriods.isEmpty()) selectionMode = false
                                     } else {
                                         onTrainingPeriodClick(period.id)
                                     }
@@ -122,21 +126,30 @@ fun HomeScreen(
                         ) {
                             Column(Modifier.weight(1f)) {
                                 Text(period.title, style = MaterialTheme.typography.titleMedium)
-                                Text("Desde: ${period.startDate.toDate()}")
+                                Text("Desde: ${period.startDate.formatAsDate()}")
+                                period.endDate?.let {
+                                    Text("Hasta: ${it.formatAsDate()}")
+                                }
                             }
 
-                            if (selectionMode) {
-                                Checkbox(
-                                    checked = isSelected,
-                                    onCheckedChange = {
-                                        if (it) selectedPeriods.add(period.id)
-                                        else selectedPeriods.remove(period.id)
-
-                                        if (selectedPeriods.isEmpty()) {
-                                            selectionMode = false
+                            Row {
+                                if (selectionMode) {
+                                    Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = {
+                                            if (it) selectedPeriods.add(period.id)
+                                            else selectedPeriods.remove(period.id)
+                                            if (selectedPeriods.isEmpty()) selectionMode = false
                                         }
+                                    )
+                                } else {
+                                    IconButton(onClick = {
+                                        periodToEdit = period
+                                        showDialog = true
+                                    }) {
+                                        Icon(Icons.Default.Edit, contentDescription = "Editar periodo")
                                     }
-                                )
+                                }
                             }
                         }
                     }
@@ -147,17 +160,30 @@ fun HomeScreen(
         if (showDialog) {
             NewTrainingPeriodDialog(
                 userId = userId,
-                onDismiss = { showDialog = false },
+                period = periodToEdit,
+                onDismiss = {
+                    showDialog = false
+                    periodToEdit = null
+                },
                 onConfirm = { title, notes, start, end ->
-                    val period = TrainingPeriod(
+                    val edited = periodToEdit
+                    val updatedPeriod = TrainingPeriod(
+                        id = edited?.id ?: "",
                         userId = userId,
                         title = title,
                         notes = notes,
                         startDate = start,
                         endDate = end
                     )
-                    viewModel.addTrainingPeriod(period)
+
+                    if (edited == null) {
+                        viewModel.addTrainingPeriod(updatedPeriod)
+                    } else {
+                        viewModel.updateTrainingPeriod(updatedPeriod)
+                    }
+
                     showDialog = false
+                    periodToEdit = null
                 }
             )
         }

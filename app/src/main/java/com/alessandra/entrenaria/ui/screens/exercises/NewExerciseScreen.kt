@@ -22,6 +22,7 @@ import com.alessandra.entrenaria.ui.components.BottomNavigationBar
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModel
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModelFactory
 import com.entrenaria.models.TrainingRepository
+import com.google.firebase.Timestamp
 import kotlinx.coroutines.launch
 
 data class ExerciseSetUiModel(
@@ -35,6 +36,7 @@ fun NewExerciseScreen(
     userId: String,
     periodId: String,
     dayId: String,
+    exerciseId: String? = null,
     navController: NavController
 ) {
     val viewModel: TrainingViewModel = viewModel(
@@ -49,14 +51,45 @@ fun NewExerciseScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    val exerciseNameSuggestions by viewModel.exerciseNames.collectAsState()
+    val exerciseToEdit by viewModel.exerciseToEdit.collectAsState()
+
+    var expanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.fetchExerciseNames()
+        if (exerciseId != null) {
+            viewModel.loadExerciseById(exerciseId)
+        }
+    }
+
+    LaunchedEffect(exerciseToEdit) {
+        exerciseToEdit?.let { exercise ->
+            name = exercise.name
+            weight = exercise.weight?.toString() ?: ""
+            notes = exercise.notes
+            sets.clear()
+            sets.addAll(
+                exercise.sets.map {
+                    ExerciseSetUiModel(
+                        it.targetRepsMin.toString(),
+                        it.targetRepsMax.toString()
+                    )
+                }
+            )
+        }
+    }
+
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Nuevo ejercicio") })
+            TopAppBar(title = {
+                Text(if (exerciseId != null) "Editar ejercicio" else "Nuevo ejercicio")
+            })
         },
         bottomBar = {
             BottomNavigationBar(
                 navController = navController,
-                currentDestination = NewExercise(periodId, dayId)
+                currentDestination = NewExercise(periodId, dayId, exerciseId)
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -67,13 +100,40 @@ fun NewExerciseScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Nombre") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                        expanded = true
+                    },
+                    label = { Text("Nombre") },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    singleLine = true
+                )
+
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    exerciseNameSuggestions
+                        .filter { it.contains(name, ignoreCase = true) && it != name }
+                        .forEach { suggestion ->
+                            DropdownMenuItem(
+                                text = { Text(suggestion) },
+                                onClick = {
+                                    name = suggestion
+                                    expanded = false
+                                }
+                            )
+                        }
+                }
+            }
 
             Spacer(Modifier.height(8.dp))
 
@@ -104,15 +164,12 @@ fun NewExerciseScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp, bottom = 8.dp),
+                    .padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Sets", style = MaterialTheme.typography.titleMedium)
-                IconButton(
-                    onClick = { sets.add(ExerciseSetUiModel()) },
-                    modifier = Modifier.size(36.dp)
-                ) {
+                IconButton(onClick = { sets.add(ExerciseSetUiModel()) }) {
                     Icon(Icons.Default.Add, contentDescription = "Añadir set")
                 }
             }
@@ -132,7 +189,6 @@ fun NewExerciseScreen(
                                 sets[index] = set.copy(targetRepsMin = it.filter { ch -> ch.isDigit() })
                             },
                             label = { Text("Reps mín") },
-                            singleLine = true,
                             modifier = Modifier.weight(1f),
                             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
                         )
@@ -143,7 +199,6 @@ fun NewExerciseScreen(
                                 sets[index] = set.copy(targetRepsMax = it.filter { ch -> ch.isDigit() })
                             },
                             label = { Text("Reps máx") },
-                            singleLine = true,
                             modifier = Modifier.weight(1f),
                             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
                         )
@@ -151,15 +206,9 @@ fun NewExerciseScreen(
                         IconButton(onClick = {
                             val duplicatedSet = set.copy()
                             sets.add(index + 1, duplicatedSet)
-
                             scope.launch {
-                                val result = snackbarHostState.showSnackbar(
-                                    message = "Set duplicado",
-                                    actionLabel = "Deshacer"
-                                )
-                                if (result == SnackbarResult.ActionPerformed) {
-                                    sets.removeAt(index + 1)
-                                }
+                                val result = snackbarHostState.showSnackbar("Set duplicado", "Deshacer")
+                                if (result == SnackbarResult.ActionPerformed) sets.removeAt(index + 1)
                             }
                         }) {
                             Icon(Icons.Default.Add, contentDescription = "Duplicar set")
@@ -183,24 +232,30 @@ fun NewExerciseScreen(
                     }
 
                     val exercise = Exercise(
+                        id = exerciseId ?: "",
                         name = name,
                         sets = finalSets,
                         weight = weight.toFloatOrNull(),
                         notes = notes,
                         userId = userId,
                         dayId = dayId,
-                        periodId = periodId
+                        periodId = periodId,
+                        createdAt = Timestamp.now()
                     )
 
-                    viewModel.addExercise(exercise)
+                    if (exerciseId != null) {
+                        viewModel.updateExercise(exercise)
+                    } else {
+                        viewModel.addExercise(exercise)
+                    }
+
                     navController.popBackStack()
                 },
                 enabled = name.isNotBlank(),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Guardar ejercicio")
+                Text(if (exerciseId != null) "Guardar cambios" else "Guardar ejercicio")
             }
         }
     }
 }
-

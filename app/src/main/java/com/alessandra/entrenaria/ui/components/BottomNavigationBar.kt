@@ -1,7 +1,7 @@
 package com.alessandra.entrenaria.ui.components
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -19,7 +19,7 @@ sealed class BottomBarItem(
 ) {
     object HomeItem : BottomBarItem("Inicio", Icons.Default.Home, Home)
     object ProfileItem : BottomBarItem("Perfil", Icons.Default.Person, Profile)
-    object ChatItem : BottomBarItem("Chat", Icons.Default.Call, Chat)
+    object ChatItem : BottomBarItem("Entrenador IA", Icons.Default.ChatBubble, Chat)
 }
 
 @Composable

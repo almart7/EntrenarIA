@@ -11,6 +11,7 @@ data class Exercise(
     val name: String = "",
     val sets: List<ExerciseSet> = emptyList(),
     val weight: Float? = null,
+    val instructions: String = "",
     val notes: String = "",
     val createdAt: Timestamp = Timestamp.now()
 )

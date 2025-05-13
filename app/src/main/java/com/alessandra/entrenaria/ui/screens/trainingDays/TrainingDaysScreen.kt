@@ -24,14 +24,14 @@ import com.alessandra.entrenaria.ui.components.BottomNavigationBar
 import com.alessandra.entrenaria.ui.components.NewTrainingDayDialog
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModel
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModelFactory
+import com.alessandra.entrenaria.util.formatAsDate
 import com.entrenaria.models.TrainingRepository
 
 @Composable
 fun TrainingDaysScreen(
     userId: String,
     periodId: String,
-    navController: NavController,
-    onTrainingDayClick: (String) -> Unit = {}
+    navController: NavController
 ) {
     val repository = remember { TrainingRepository() }
     val viewModel: TrainingViewModel = viewModel(
@@ -92,7 +92,7 @@ fun TrainingDaysScreen(
             )
 
             LazyColumn {
-                items(trainingDays) { day ->
+                items(trainingDays.sortedByDescending { it.date }) { day ->
                     val isSelected = selectedDays.contains(day.id)
 
                     Card(
@@ -135,7 +135,7 @@ fun TrainingDaysScreen(
                         ) {
                             Column(Modifier.weight(1f)) {
                                 Text(day.label, style = MaterialTheme.typography.titleMedium)
-                                Text("Fecha: ${day.date.toDate()}")
+                                Text("Fecha: ${day.date.formatAsDate()}")
                             }
 
                             Row {

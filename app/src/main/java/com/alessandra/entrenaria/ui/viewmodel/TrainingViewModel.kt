@@ -25,11 +25,17 @@ class TrainingViewModel(
     private val _exercises = MutableStateFlow<List<Exercise>>(emptyList())
     val exercises: StateFlow<List<Exercise>> = _exercises.asStateFlow()
 
+    private val _trainingPeriod = MutableStateFlow<TrainingPeriod?>(null)
+    val trainingPeriod: StateFlow<TrainingPeriod?> = _trainingPeriod
+
     private val _exerciseToEdit = MutableStateFlow<Exercise?>(null)
     val exerciseToEdit: StateFlow<Exercise?> = _exerciseToEdit
 
-    private val _trainingPeriod = MutableStateFlow<TrainingPeriod?>(null)
-    val trainingPeriod: StateFlow<TrainingPeriod?> = _trainingPeriod
+    private val _exerciseDetail = MutableStateFlow<Exercise?>(null)
+    val exerciseDetail: StateFlow<Exercise?> = _exerciseDetail
+
+    private val _exerciseNames = MutableStateFlow<List<String>>(emptyList())
+    val exerciseNames: StateFlow<List<String>> = _exerciseNames
 
     fun loadTrainingPeriods() {
         viewModelScope.launch {
@@ -37,14 +43,11 @@ class TrainingViewModel(
         }
     }
 
-
     fun loadTrainingPeriodById(periodId: String) {
         viewModelScope.launch {
             _trainingPeriod.value = repository.getTrainingPeriodById(periodId)
         }
     }
-
-
 
     fun loadTrainingDays(periodId: String) {
         viewModelScope.launch {
@@ -90,11 +93,8 @@ class TrainingViewModel(
         viewModelScope.launch {
             try {
                 repository.deleteTrainingDay(dayId)
-                // Si quieres refrescar los días visibles:
                 _trainingDays.value = _trainingDays.value.filterNot { it.id == dayId }
-            } catch (e: Exception) {
-                // Manejo de error opcional
-            }
+            } catch (_: Exception) {}
         }
     }
 
@@ -103,26 +103,23 @@ class TrainingViewModel(
             try {
                 repository.deleteExercise(exerciseId)
                 _exercises.value = _exercises.value.filterNot { it.id == exerciseId }
-            } catch (e: Exception) {
-                // Manejo opcional: puedes mostrar un error en la UI
-            }
+            } catch (_: Exception) {}
         }
     }
 
     fun updateExercise(exercise: Exercise) {
         viewModelScope.launch {
             repository.updateExercise(exercise)
-            loadExercises(exercise.dayId) // Refresca la lista
+            loadExercises(exercise.dayId)
         }
     }
 
     fun updateTrainingDay(day: TrainingDay) {
         viewModelScope.launch {
             repository.updateTrainingDay(day)
-            loadTrainingDays(day.periodId) // recargar lista tras actualizar
+            loadTrainingDays(day.periodId)
         }
     }
-
 
     fun updateTrainingPeriod(period: TrainingPeriod) {
         viewModelScope.launch {
@@ -131,22 +128,23 @@ class TrainingViewModel(
         }
     }
 
-
-    private val _exerciseNames = MutableStateFlow<List<String>>(emptyList())
-    val exerciseNames: StateFlow<List<String>> = _exerciseNames
-
     fun fetchExerciseNames() {
         viewModelScope.launch {
             _exerciseNames.value = repository.getExerciseNamesForUser(userId)
         }
     }
 
-    fun loadExerciseById(id: String) {
+    // para NewExerciseScreen
+    fun loadExerciseToEdit(id: String) {
         viewModelScope.launch {
             _exerciseToEdit.value = repository.getExerciseById(id)
         }
     }
 
-
-
+    // para DetailExerciseScreen
+    fun loadExerciseDetailById(id: String) {
+        viewModelScope.launch {
+            _exerciseDetail.value = repository.getExerciseById(id)
+        }
+    }
 }

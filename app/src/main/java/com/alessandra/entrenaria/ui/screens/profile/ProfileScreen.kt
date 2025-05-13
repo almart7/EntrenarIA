@@ -1,13 +1,14 @@
 package com.alessandra.entrenaria.ui.screens.profile
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.alessandra.entrenaria.navigation.Profile
 import com.alessandra.entrenaria.ui.components.BottomNavigationBar
@@ -23,18 +24,15 @@ fun ProfileScreen(
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
 
-    var email by remember { mutableStateOf<String>("") }
+    var email by remember { mutableStateOf("") }
     var name by remember { mutableStateOf<String?>(null) }
     var gender by remember { mutableStateOf<String?>(null) }
     var age by remember { mutableStateOf<Int?>(null) }
     var showEditDialog by remember { mutableStateOf(false) }
 
-    // ✅ Aquí defines la función
     fun loadUserData() {
-        val user = auth.currentUser
-        if (user != null) {
-            val uid = user.uid
-            db.collection("users").document(uid)
+        auth.currentUser?.let { user ->
+            db.collection("users").document(user.uid)
                 .get()
                 .addOnSuccessListener { document ->
                     if (document.exists()) {
@@ -47,7 +45,6 @@ fun ProfileScreen(
         }
     }
 
-    // Se ejecuta al entrar a la pantalla
     LaunchedEffect(Unit) {
         loadUserData()
     }
@@ -63,41 +60,46 @@ fun ProfileScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
                 .padding(padding)
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Perfil",
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 32.sp,
-                modifier = Modifier.padding(bottom = 32.dp)
+                text = "Perfil de usuario",
+                style = MaterialTheme.typography.titleLarge
             )
 
-            Text("Email: $email", fontSize = 20.sp, modifier = Modifier.padding(bottom = 16.dp))
-            Text("Nombre: ${name ?: "No definido"}", fontSize = 20.sp, modifier = Modifier.padding(bottom = 16.dp))
-            Text("Género: ${gender ?: "No definido"}", fontSize = 20.sp, modifier = Modifier.padding(bottom = 16.dp))
-            Text("Edad: ${age?.toString() ?: "No definido"}", fontSize = 20.sp, modifier = Modifier.padding(bottom = 32.dp))
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                ProfileField(label = "Email", value = email)
+                ProfileField(label = "Nombre", value = name ?: "No definido")
+                ProfileField(label = "Género", value = gender ?: "No definido")
+                ProfileField(label = "Edad", value = age?.toString() ?: "No definido")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
                 onClick = { showEditDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Editar Perfil")
+                Icon(Icons.Default.Edit, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Editar perfil")
             }
 
             Button(
                 onClick = {
-                    auth.signOut()
                     onLogout()
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
             ) {
+                Icon(Icons.Default.Logout, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
                 Text("Cerrar sesión", color = MaterialTheme.colorScheme.onError)
             }
         }
@@ -110,10 +112,17 @@ fun ProfileScreen(
                 onDismiss = { showEditDialog = false },
                 onProfileUpdated = {
                     showEditDialog = false
-                    loadUserData() // Refresca los datos del perfil tras actualizarlos
+                    loadUserData()
                 }
             )
-
         }
+    }
+}
+
+@Composable
+private fun ProfileField(label: String, value: String) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+        Text(text = value, style = MaterialTheme.typography.bodyLarge)
     }
 }

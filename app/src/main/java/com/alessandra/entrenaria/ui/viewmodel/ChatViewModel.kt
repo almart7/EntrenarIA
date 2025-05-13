@@ -17,6 +17,9 @@ class ChatViewModel(
     private val _uiState = mutableStateOf(ChatUiState())
     val uiState: State<ChatUiState> = _uiState
 
+    // Estado para controlar si es la primera pregunta de la sesión
+    private var isFirstQuestion = true
+
     init {
         chatRepository.observeMessages(userId) { messages ->
             _uiState.value = _uiState.value.copy(messages = messages)
@@ -35,10 +38,15 @@ class ChatViewModel(
 
     private fun sendQuestionToGemini(question: String) {
         viewModelScope.launch {
-            val exercises = trainingRepository.getTrainingDataLastMonth(userId)
-            val prompt = chatRepository.buildPromptFromExercises(exercises, question)
-            val response = chatRepository.generateGeminiResponse(prompt)
+            val prompt = if (isFirstQuestion) {
+                val exercises = trainingRepository.getTrainingDataLastMonth(userId)
+                isFirstQuestion = false // Desactivar para futuras preguntas (continuación del chat)
+                chatRepository.buildPromptFromExercises(exercises, question)
+            } else {
+                question
+            }
 
+            val response = chatRepository.generateGeminiResponse(prompt)
             response?.let {
                 chatRepository.sendMessage(
                     userId,
@@ -48,7 +56,6 @@ class ChatViewModel(
                         timestamp = System.currentTimeMillis()
                     )
                 )
-
             }
         }
     }

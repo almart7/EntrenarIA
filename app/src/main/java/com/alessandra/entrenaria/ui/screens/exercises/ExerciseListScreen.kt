@@ -7,11 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -21,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.alessandra.entrenaria.data.model.Exercise
+import com.alessandra.entrenaria.navigation.ExerciseDetail
 import com.alessandra.entrenaria.navigation.ExerciseList
 import com.alessandra.entrenaria.navigation.NewExercise
 import com.alessandra.entrenaria.ui.components.BottomNavigationBar
@@ -107,6 +104,9 @@ fun ExerciseListScreen(
                                         if (isSelected) selectedExercises.remove(exercise.id)
                                         else selectedExercises.add(exercise.id)
                                         if (selectedExercises.isEmpty()) selectionMode = false
+                                    } else {
+                                        // Navegación a detalle
+                                         navController.navigate(ExerciseDetail(exercise.id))
                                     }
                                 },
                                 onLongClick = {
@@ -148,43 +148,10 @@ fun ExerciseListScreen(
                                         exerciseNotes = exercise.notes
                                         showRepsDialog = true
                                     }) {
-                                        if (hasActualReps) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = "Repeticiones registradas",
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                        } else {
-                                            Icon(
-                                                imageVector = Icons.Default.PlayArrow,
-                                                contentDescription = "Registrar repeticiones"
-                                            )
-                                        }
-                                    }
-
-                                    // Botón de editar siempre visible, pero controlado por condición
-                                    IconButton(onClick = {
-                                        if (hasActualReps) {
-                                            Toast.makeText(
-                                                context,
-                                                "No se puede editar el objetivo de un ejercicio que ya has realizado.",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        } else {
-                                            navController.navigate(
-                                                NewExercise(
-                                                    periodId = periodId,
-                                                    dayId = dayId,
-                                                    exerciseId = exercise.id
-                                                )
-                                            )
-                                        }
-                                    }) {
                                         Icon(
-                                            imageVector = Icons.Default.Edit,
-                                            contentDescription = "Editar ejercicio",
-                                            tint = if (hasActualReps) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                                            else LocalContentColor.current
+                                            imageVector = if (hasActualReps) Icons.Default.Check else Icons.Default.PlayArrow,
+                                            contentDescription = if (hasActualReps) "Completado" else "Registrar repeticiones",
+                                            tint = if (hasActualReps) MaterialTheme.colorScheme.primary else LocalContentColor.current
                                         )
                                     }
                                 }
@@ -235,6 +202,12 @@ fun ExerciseListScreen(
                 title = { Text("Repeticiones realizadas") },
                 text = {
                     Column {
+                        Text(
+                            text = selectedExercise!!.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
                         selectedExercise!!.sets.forEachIndexed { index, set ->
                             OutlinedTextField(
                                 value = actualRepsInputs.getOrElse(index) { "" },

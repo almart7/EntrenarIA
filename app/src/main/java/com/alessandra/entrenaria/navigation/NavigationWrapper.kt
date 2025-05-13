@@ -5,6 +5,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.alessandra.entrenaria.ui.screens.chat.ChatScreen
+import com.alessandra.entrenaria.ui.screens.exercises.ExerciseDetailScreen
 import com.alessandra.entrenaria.ui.screens.exercises.ExerciseListScreen
 import com.alessandra.entrenaria.ui.screens.exercises.NewExerciseScreen
 import com.alessandra.entrenaria.ui.screens.home.HomeScreen
@@ -77,7 +78,7 @@ fun NavigationWrapper(auth: FirebaseAuth) {
                 onLogout = {
                     auth.signOut()
                     navController.navigate(Initial) {
-                        popUpTo(0) { inclusive = true } // 🔥 limpia toda la pila
+                        popUpTo(0) { inclusive = true } // 🔥 limpia toda la pila de navegación
                     }
                 }
             )
@@ -126,6 +127,17 @@ fun NavigationWrapper(auth: FirebaseAuth) {
                 userId = userId,
                 periodId = periodId,
                 dayId = dayId,
+                exerciseId = exerciseId,
+                navController = navController
+            )
+        }
+
+        composable<ExerciseDetail> { backStackEntry ->
+            val userId = auth.currentUser?.uid ?: return@composable
+            val exerciseId = backStackEntry.arguments?.getString("exerciseId") ?: return@composable
+
+            ExerciseDetailScreen(
+                userId = userId,
                 exerciseId = exerciseId,
                 navController = navController
             )

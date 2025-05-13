@@ -45,6 +45,7 @@ fun NewExerciseScreen(
 
     var name by remember { mutableStateOf("") }
     var weight by remember { mutableStateOf("") }
+    var instructions by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
     val sets = remember { mutableStateListOf(ExerciseSetUiModel()) }
 
@@ -59,7 +60,7 @@ fun NewExerciseScreen(
     LaunchedEffect(Unit) {
         viewModel.fetchExerciseNames()
         if (exerciseId != null) {
-            viewModel.loadExerciseById(exerciseId)
+            viewModel.loadExerciseToEdit(exerciseId)
         }
     }
 
@@ -151,9 +152,9 @@ fun NewExerciseScreen(
             Spacer(Modifier.height(8.dp))
 
             OutlinedTextField(
-                value = notes,
-                onValueChange = { notes = it },
-                label = { Text("Notas (opcional)") },
+                value = instructions,
+                onValueChange = { instructions = it },
+                label = { Text("Instrucciones (opcional)") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
@@ -236,7 +237,7 @@ fun NewExerciseScreen(
                         name = name,
                         sets = finalSets,
                         weight = weight.toFloatOrNull(),
-                        notes = notes,
+                        instructions = instructions,
                         userId = userId,
                         dayId = dayId,
                         periodId = periodId,

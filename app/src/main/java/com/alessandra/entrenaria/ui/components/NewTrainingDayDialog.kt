@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.google.firebase.Timestamp
 import com.alessandra.entrenaria.data.model.TrainingDay
+import com.alessandra.entrenaria.util.formatAsDate
 import java.util.*
 
 @Composable
@@ -48,7 +49,7 @@ fun NewTrainingDayDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Text("Fecha: ${selectedDate?.toString() ?: "Sin seleccionar"}")
+                Text("Fecha: ${selectedDate?.formatAsDate() ?: "Sin seleccionar"}")
 
                 Button(onClick = {
                     val calendar = Calendar.getInstance()

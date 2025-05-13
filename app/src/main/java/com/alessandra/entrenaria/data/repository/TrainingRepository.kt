@@ -78,7 +78,7 @@ class TrainingRepository(private val db: FirebaseFirestore = FirebaseFirestore.g
     }
 
 
-    suspend fun getExercisesForPeriod(userId: String, periodId: String, name: String? = null): List<Exercise> {
+    /*suspend fun getExercisesForPeriod(userId: String, periodId: String, name: String? = null): List<Exercise> {
         var query = db.collection("exercises")
             .whereEqualTo("userId", userId)
             .whereEqualTo("periodId", periodId)
@@ -88,7 +88,7 @@ class TrainingRepository(private val db: FirebaseFirestore = FirebaseFirestore.g
         }
 
         return query.get().await().toObjects(Exercise::class.java)
-    }
+    }*/
 
     suspend fun getExerciseNamesForUser(userId: String): List<String> {
         return db.collection("exercises")
@@ -110,32 +110,27 @@ class TrainingRepository(private val db: FirebaseFirestore = FirebaseFirestore.g
 
         // Obtener todos los períodos de entrenamiento del usuario
         val periods = db.collection("training_periods")
-            .whereEqualTo("user_id", userId)
+            .whereEqualTo("userId", userId)
             .get()
             .await()
-        Log.d("TrainingDebug", "📂 Periodos encontrados: ${periods.size()}")
 
         for (period in periods.documents) {
             val periodId = period.id
-            Log.d("TrainingDebug", "📁 Periodo: $periodId")
 
             // Obtener días del período con fecha dentro del último mes
             val days = db.collection("training_days")
-                .whereEqualTo("period_id", periodId)
+                .whereEqualTo("periodId", periodId)
                 .whereGreaterThanOrEqualTo("date", oneMonthAgo)
                 .get()
                 .await()
 
-            Log.d("TrainingDebug", "📄 Días recientes en $periodId: ${days.size()}")
 
             for (day in days.documents) {
                 val dayId = day.id
-                val rawDate = day.getTimestamp("date")
-                Log.d("TrainingDebug", "📆 Día válido: $dayId, fecha: $rawDate")
 
                 // Obtener ejercicios del día
                 val exercises = db.collection("exercises")
-                    .whereEqualTo("day_id", dayId)
+                    .whereEqualTo("dayId", dayId)
                     .get()
                     .await()
 
@@ -155,8 +150,6 @@ class TrainingRepository(private val db: FirebaseFirestore = FirebaseFirestore.g
                 }
             }
         }
-
-        Log.d("TrainingDebug", "✅ Total ejercicios encontrados: ${result.size}")
         return result
     }
 

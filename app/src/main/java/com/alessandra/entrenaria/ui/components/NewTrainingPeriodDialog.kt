@@ -1,6 +1,5 @@
 package com.alessandra.entrenaria.ui.components
 
-import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -9,23 +8,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.alessandra.entrenaria.data.model.TrainingPeriod
 import com.google.firebase.Timestamp
-import java.util.*
 import com.alessandra.entrenaria.util.formatAsDate
+import com.alessandra.entrenaria.util.showDatePicker
 
 @Composable
 fun NewTrainingPeriodDialog(
     userId: String,
-    period: TrainingPeriod? = null,
-    onDismiss: () -> Unit,
-    onConfirm: (title: String, notes: String, start: Timestamp, end: Timestamp) -> Unit
+    period: TrainingPeriod? = null,  // Null si se está creando un nuevo periodo
+    onDismiss: () -> Unit, // cierra el diálogo
+    onConfirm: (title: String, notes: String, start: Timestamp, end: Timestamp) -> Unit // Envia los datos al ViewModel
 ) {
     val context = LocalContext.current
-
+    // Rellena los campos con los datos del periodo si se está editando
+    // Remember para mantener los valores actualizados
     var title by remember { mutableStateOf(period?.title ?: "") }
     var notes by remember { mutableStateOf(period?.notes ?: "") }
-
-    var startDate by remember { mutableStateOf(period?.startDate?.toDate()) }
-    var endDate by remember { mutableStateOf(period?.endDate?.toDate()) }
+    var startDate by remember { mutableStateOf(period?.startDate) }
+    var endDate by remember { mutableStateOf(period?.endDate) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -51,7 +50,6 @@ fun NewTrainingPeriodDialog(
                 Button(onClick = {
                     showDatePicker(context, startDate) { selected ->
                         startDate = selected
-                        // Reset end date si ya no es válida
                         if (endDate != null && endDate!! < selected) {
                             endDate = null
                         }
@@ -61,14 +59,16 @@ fun NewTrainingPeriodDialog(
                 }
 
                 Text("Fin: ${endDate?.formatAsDate() ?: "Sin seleccionar"}")
+                // Solo puedes elegir end date si ya has puesto start date
                 Button(onClick = {
-                    showDatePicker(context, endDate ?: startDate ?: Date()) { selected ->
+                    showDatePicker(context, endDate ?: startDate, minDate = startDate?.toDate()) { selected ->
                         endDate = selected
                     }
                 }, enabled = startDate != null) {
                     Text("Seleccionar fecha de fin")
                 }
 
+                // Error si la fecha de fin es anterior a la de inicio
                 if (startDate != null && endDate != null && endDate!! < startDate!!) {
                     Text(
                         "La fecha de fin no puede ser anterior a la de inicio.",
@@ -78,18 +78,20 @@ fun NewTrainingPeriodDialog(
                 }
             }
         },
+        // solo puedes guardar si se han rellenado los campos correctamente
         confirmButton = {
-            val fechasValidas = title.isNotBlank() && startDate != null && endDate != null && endDate!! >= startDate!!
+            val infoValida = title.isNotBlank() && startDate != null && endDate != null && endDate!! >= startDate!!
             TextButton(
                 onClick = {
+                    // Envia datos a viewmodel
                     onConfirm(
                         title,
                         notes,
-                        Timestamp(startDate!!),
-                        Timestamp(endDate!!)
+                        startDate!!,
+                        endDate!!
                     )
                 },
-                enabled = fechasValidas
+                enabled = infoValida
             ) {
                 Text(if (period == null) "Crear" else "Guardar cambios")
             }
@@ -102,18 +104,3 @@ fun NewTrainingPeriodDialog(
     )
 }
 
-private fun showDatePicker(context: android.content.Context, preselected: Date?, onDateSelected: (Date) -> Unit) {
-    val calendar = Calendar.getInstance()
-    if (preselected != null) calendar.time = preselected
-
-    DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth ->
-            calendar.set(year, month, dayOfMonth)
-            onDateSelected(calendar.time)
-        },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
-    ).show()
-}

@@ -7,38 +7,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.alessandra.entrenaria.R
 import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     auth: FirebaseAuth,
-    navigateBack: () -> Unit = {},
     navigateToHome: () -> Unit
 ) {
+    // Toma los contenidos de los TextFields y los guarda en variables
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    // sirve para mostrar Toast
     val context = LocalContext.current
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = { navigateBack() }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.arrow_back),
-                            contentDescription = "Volver"
-                        )
-                    }
-                }
-            )
-        }
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -47,6 +33,7 @@ fun LoginScreen(
                 .padding(horizontal = 32.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Email
             Text(
                 text = "Email",
                 style = MaterialTheme.typography.titleLarge,
@@ -65,6 +52,7 @@ fun LoginScreen(
 
             Spacer(Modifier.height(32.dp))
 
+            // Contraseña
             Text(
                 text = "Contraseña",
                 style = MaterialTheme.typography.titleLarge,
@@ -75,7 +63,7 @@ fun LoginScreen(
                 onValueChange = { password = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = PasswordVisualTransformation(), // Ocultar caracteres contraseña
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                     unfocusedContainerColor = MaterialTheme.colorScheme.secondaryContainer
@@ -84,14 +72,18 @@ fun LoginScreen(
 
             Spacer(Modifier.height(32.dp))
 
+            // Botón iniciar sesión
             Button(
                 onClick = {
+                    // Sólo si los campos no están vacíos, intenta iniciar sesión
                     if (email.isNotBlank() && password.isNotBlank()) {
                         auth.signInWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
+                                // Navega a home
                                 if (task.isSuccessful) {
                                     navigateToHome()
                                 } else {
+                                    // Si no, muestra una alerta
                                     Toast.makeText(context, "El email o la contraseña son incorrectos", Toast.LENGTH_LONG).show()
                                 }
                             }

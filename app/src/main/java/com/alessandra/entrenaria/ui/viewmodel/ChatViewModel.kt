@@ -14,18 +14,25 @@ class ChatViewModel(
     private val userId: String
 ) : ViewModel() {
 
+    // Estado interno del ViewModel con los mensajes del chat
     private val _uiState = mutableStateOf(ChatUiState())
-    val uiState: State<ChatUiState> = _uiState
+    val uiState: State<ChatUiState> = _uiState // expuesto para la UI
 
-    // Estado para controlar si es la primera pregunta de la sesión
+    // Indica si es el primer mensaje de la sesión
     private var isFirstQuestion = true
 
     init {
+        // Se suscribe a Firebase para recibir nuevos mensajes en tiempo real
         chatRepository.observeMessages(userId) { messages ->
             _uiState.value = _uiState.value.copy(messages = messages)
         }
     }
 
+
+    /**
+     * Se llama cuando el usuario envía un mensaje desde la UI.
+     * Guarda el mensaje en Firebase y lanza la petición a Gemini.
+     */
     fun sendMessage(text: String) {
         val message = ChatMessage(
             sender = "user",
@@ -36,16 +43,24 @@ class ChatViewModel(
         sendQuestionToGemini(text)
     }
 
+    /**
+     * Gestiona el envío de la pregunta a Gemini.
+     * Solo en la primera pregunta de la sesión incluye los datos de entrenamiento del último mes.
+     */
     private fun sendQuestionToGemini(question: String) {
         viewModelScope.launch {
             val prompt = if (isFirstQuestion) {
+                // Obtiene ejercicios del último mes desde Firestore
                 val exercises = trainingRepository.getTrainingDataLastMonth(userId)
-                isFirstQuestion = false // Desactivar para futuras preguntas (continuación del chat)
+                // Ya se ha realizado la primera pregunta (a partir de aquí)
+                isFirstQuestion = false
+                // Crea el prompt con contexto de entrenamiento
                 chatRepository.buildPromptFromExercises(exercises, question)
             } else {
                 question
             }
 
+            // Si hay respuesta, la guarda como mensaje de Gemini
             val response = chatRepository.generateGeminiResponse(prompt)
             response?.let {
                 chatRepository.sendMessage(

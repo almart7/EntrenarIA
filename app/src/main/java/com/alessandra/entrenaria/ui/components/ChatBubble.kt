@@ -16,16 +16,23 @@ import com.alessandra.entrenaria.data.model.ChatMessage
 
 @Composable
 fun ChatBubble(message: ChatMessage) {
+    // Determina si el mensaje fue enviado por el usuario
     val isUser = message.sender == "user"
+
     Row(
+        // Alineación horizontal: a la derecha si es del usuario, izquierda si es de la IA
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp) // Espaciado entre burbujas
     ) {
         Surface(
+            // Color diferente para mensajes del usuario y del asistente
             color = if (isUser) Color(0xFFDCF8C6) else Color.LightGray,
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(8.dp), // Bordes redondeados para la burbuja
             modifier = Modifier.padding(horizontal = 8.dp)
         ) {
+            // Contenido del mensaje
             Text(
                 text = message.text,
                 modifier = Modifier.padding(8.dp),
@@ -34,3 +41,4 @@ fun ChatBubble(message: ChatMessage) {
         }
     }
 }
+

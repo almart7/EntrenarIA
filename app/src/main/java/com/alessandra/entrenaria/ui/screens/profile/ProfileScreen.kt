@@ -9,16 +9,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import com.alessandra.entrenaria.navigation.Profile
 import com.alessandra.entrenaria.ui.components.BottomNavigationBar
+import com.alessandra.entrenaria.ui.components.BottomBarItem
 import com.alessandra.entrenaria.ui.components.EditProfileDialog
+import com.alessandra.entrenaria.ui.components.handleBottomBarNavigation // ✅ Importa la función
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun ProfileScreen(
-    navController: NavController,
+    onNavigateToTrainings: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToChat: () -> Unit,
     onLogout: () -> Unit = {}
 ) {
     val auth = FirebaseAuth.getInstance()
@@ -52,8 +54,15 @@ fun ProfileScreen(
     Scaffold(
         bottomBar = {
             BottomNavigationBar(
-                navController = navController,
-                currentDestination = Profile
+                currentDestination = BottomBarItem.ProfileItem,
+                onNavigate = { destination ->
+                    handleBottomBarNavigation(
+                        destination = destination,
+                        onTrainings = onNavigateToTrainings,
+                        onProfile = onNavigateToProfile,
+                        onChat = onNavigateToChat
+                    )
+                }
             )
         }
     ) { padding ->
@@ -92,9 +101,7 @@ fun ProfileScreen(
             }
 
             Button(
-                onClick = {
-                    onLogout()
-                },
+                onClick = { onLogout() },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
             ) {

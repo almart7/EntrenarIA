@@ -1,20 +1,22 @@
 package com.alessandra.entrenaria.ui.screens.exercises
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import com.alessandra.entrenaria.data.model.Exercise
 import com.alessandra.entrenaria.data.model.ExerciseSet
 import com.alessandra.entrenaria.navigation.NewExercise
@@ -23,7 +25,8 @@ import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModel
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModelFactory
 import com.entrenaria.models.TrainingRepository
 import com.google.firebase.Timestamp
-import kotlinx.coroutines.launch
+import com.alessandra.entrenaria.ui.components.handleBottomBarNavigation
+
 
 data class ExerciseSetUiModel(
     var targetRepsMin: String = "",
@@ -37,26 +40,29 @@ fun NewExerciseScreen(
     periodId: String,
     dayId: String,
     exerciseId: String? = null,
-    navController: NavController
-) {
+    onNavigateToTrainings: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToChat: () -> Unit,
+    onBack: () -> Unit
+){
+    val context = LocalContext.current
+    val repository = remember { TrainingRepository() }
     val viewModel: TrainingViewModel = viewModel(
-        factory = TrainingViewModelFactory(TrainingRepository(), userId)
+        factory = TrainingViewModelFactory(repository, userId)
     )
 
+    // Estados para campos del formulario
     var name by remember { mutableStateOf("") }
     var weight by remember { mutableStateOf("") }
     var instructions by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
     val sets = remember { mutableStateListOf(ExerciseSetUiModel()) }
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
     val exerciseNameSuggestions by viewModel.exerciseNames.collectAsState()
     val exerciseToEdit by viewModel.exerciseToEdit.collectAsState()
-
     var expanded by remember { mutableStateOf(false) }
 
+    // Carga de nombres y, si aplica, el ejercicio a editar
     LaunchedEffect(Unit) {
         viewModel.fetchExerciseNames()
         if (exerciseId != null) {
@@ -64,10 +70,12 @@ fun NewExerciseScreen(
         }
     }
 
+    // Rellena los campos si es edición
     LaunchedEffect(exerciseToEdit) {
         exerciseToEdit?.let { exercise ->
             name = exercise.name
             weight = exercise.weight?.toString() ?: ""
+            instructions = exercise.instructions
             notes = exercise.notes
             sets.clear()
             sets.addAll(
@@ -89,11 +97,17 @@ fun NewExerciseScreen(
         },
         bottomBar = {
             BottomNavigationBar(
-                navController = navController,
-                currentDestination = NewExercise(periodId, dayId, exerciseId)
+                currentDestination = NewExercise(periodId, dayId, exerciseId),
+                onNavigate = { destination ->
+                    handleBottomBarNavigation(
+                        destination = destination,
+                        onTrainings = onNavigateToTrainings,
+                        onProfile = onNavigateToProfile,
+                        onChat = onNavigateToChat
+                    )
+                }
             )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -101,6 +115,7 @@ fun NewExerciseScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
+            // Nombre
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = !expanded }
@@ -138,6 +153,7 @@ fun NewExerciseScreen(
 
             Spacer(Modifier.height(8.dp))
 
+            // Peso
             OutlinedTextField(
                 value = weight,
                 onValueChange = {
@@ -151,6 +167,7 @@ fun NewExerciseScreen(
 
             Spacer(Modifier.height(8.dp))
 
+            // Instrucciones
             OutlinedTextField(
                 value = instructions,
                 onValueChange = { instructions = it },
@@ -162,6 +179,7 @@ fun NewExerciseScreen(
 
             Spacer(Modifier.height(16.dp))
 
+            // Título y botón de añadir set
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -175,6 +193,7 @@ fun NewExerciseScreen(
                 }
             }
 
+            // Lista de sets
             LazyColumn {
                 itemsIndexed(sets) { index, set ->
                     Row(
@@ -205,14 +224,11 @@ fun NewExerciseScreen(
                         )
 
                         IconButton(onClick = {
-                            val duplicatedSet = set.copy()
-                            sets.add(index + 1, duplicatedSet)
-                            scope.launch {
-                                val result = snackbarHostState.showSnackbar("Set duplicado", "Deshacer")
-                                if (result == SnackbarResult.ActionPerformed) sets.removeAt(index + 1)
-                            }
+                            val duplicated = set.copy()
+                            sets.add(index + 1, duplicated)
+                            Toast.makeText(context, "Set duplicado", Toast.LENGTH_SHORT).show()
                         }) {
-                            Icon(Icons.Default.Add, contentDescription = "Duplicar set")
+                            Icon(Icons.Default.ContentCopy, contentDescription = "Duplicar set")
                         }
 
                         IconButton(onClick = { sets.removeAt(index) }) {
@@ -224,13 +240,27 @@ fun NewExerciseScreen(
 
             Spacer(Modifier.height(24.dp))
 
+            // Guardar
             Button(
                 onClick = {
-                    val finalSets = sets.mapNotNull {
-                        val min = it.targetRepsMin.toIntOrNull()
-                        val max = it.targetRepsMax.toIntOrNull()
-                        if (min != null && max != null) ExerciseSet(min, max) else null
+                    val parsedSets = sets.map { uiSet ->
+                        val min = uiSet.targetRepsMin.toIntOrNull()
+                        val max = uiSet.targetRepsMax.toIntOrNull()
+                        if (min != null && max != null && min <= max) {
+                            ExerciseSet(min, max)
+                        } else null
                     }
+
+                    if (parsedSets.any { it == null }) {
+                        Toast.makeText(
+                            context,
+                            "Corrige los sets: asegúrate de que mín y máx sean números válidos y mín ≤ máx",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        return@Button
+                    }
+
+                    val finalSets = parsedSets.filterNotNull()
 
                     val exercise = Exercise(
                         id = exerciseId ?: "",
@@ -238,6 +268,7 @@ fun NewExerciseScreen(
                         sets = finalSets,
                         weight = weight.toFloatOrNull(),
                         instructions = instructions,
+                        notes = notes,
                         userId = userId,
                         dayId = dayId,
                         periodId = periodId,
@@ -249,8 +280,8 @@ fun NewExerciseScreen(
                     } else {
                         viewModel.addExercise(exercise)
                     }
-
-                    navController.popBackStack()
+                    // Volver atrás tras guardar (a la lista de ejercicios)
+                    onBack()
                 },
                 enabled = name.isNotBlank(),
                 modifier = Modifier.fillMaxWidth()

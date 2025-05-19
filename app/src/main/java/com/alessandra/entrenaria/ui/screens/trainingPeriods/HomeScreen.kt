@@ -1,4 +1,4 @@
-package com.alessandra.entrenaria.ui.screens.home
+package com.alessandra.entrenaria.ui.screens.trainingPeriods
 
 import android.widget.Toast
 import androidx.compose.foundation.combinedClickable
@@ -20,24 +20,25 @@ import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModelFactory
 import com.entrenaria.models.TrainingRepository
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.navigation.NavController
 import com.alessandra.entrenaria.ui.components.BottomNavigationBar
-import com.alessandra.entrenaria.navigation.Home
+import com.alessandra.entrenaria.navigation.TrainingPeriods
+import com.alessandra.entrenaria.ui.components.handleBottomBarNavigation
 import com.alessandra.entrenaria.util.formatAsDate
 
 
 
 @Composable
-fun HomeScreen(
+fun TrainingPeriodsScreen(
     userId: String,
-    navController: NavController,
-    onTrainingPeriodClick: (String) -> Unit = {}
+    onNavigateToTrainingDays: (String) -> Unit,
+    onNavigateToTrainings: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToChat: () -> Unit
 ) {
     val repository = remember { TrainingRepository() }
     val viewModel: TrainingViewModel = viewModel(
         factory = TrainingViewModelFactory(repository, userId)
     )
-
     val periods by viewModel.trainingPeriods.collectAsState()
     val context = LocalContext.current
 
@@ -58,11 +59,7 @@ fun HomeScreen(
                     onClick = { showDeleteDialog = true },
                     containerColor = MaterialTheme.colorScheme.error
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Eliminar",
-                        tint = MaterialTheme.colorScheme.onError
-                    )
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.onError)
                 }
             } else {
                 FloatingActionButton(onClick = {
@@ -75,8 +72,15 @@ fun HomeScreen(
         },
         bottomBar = {
             BottomNavigationBar(
-                navController = navController,
-                currentDestination = Home
+                currentDestination = TrainingPeriods,
+                onNavigate = { destination ->
+                    handleBottomBarNavigation(
+                        destination = destination,
+                        onTrainings = onNavigateToTrainings,
+                        onProfile = onNavigateToProfile,
+                        onChat = onNavigateToChat
+                    )
+                }
             )
         }
     ) { padding ->
@@ -86,11 +90,7 @@ fun HomeScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text(
-                text = "Tus entrenamientos",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+            Text("Tus entrenamientos", style = MaterialTheme.typography.titleLarge)
 
             LazyColumn {
                 items(periods) { period ->
@@ -107,7 +107,7 @@ fun HomeScreen(
                                         else selectedPeriods.add(period.id)
                                         if (selectedPeriods.isEmpty()) selectionMode = false
                                     } else {
-                                        onTrainingPeriodClick(period.id)
+                                        onNavigateToTrainingDays(period.id)
                                     }
                                 },
                                 onLongClick = {
@@ -127,11 +127,8 @@ fun HomeScreen(
                             Column(Modifier.weight(1f)) {
                                 Text(period.title, style = MaterialTheme.typography.titleMedium)
                                 Text("Desde: ${period.startDate.formatAsDate()}")
-                                period.endDate?.let {
-                                    Text("Hasta: ${it.formatAsDate()}")
-                                }
+                                period.endDate?.let { Text("Hasta: ${it.formatAsDate()}") }
                             }
-
                             Row {
                                 if (selectionMode) {
                                     Checkbox(
@@ -166,21 +163,16 @@ fun HomeScreen(
                     periodToEdit = null
                 },
                 onConfirm = { title, notes, start, end ->
-                    val edited = periodToEdit
-                    val updatedPeriod = TrainingPeriod(
-                        id = edited?.id ?: "",
+                    val updated = TrainingPeriod(
+                        id = periodToEdit?.id ?: "",
                         userId = userId,
                         title = title,
                         notes = notes,
                         startDate = start,
                         endDate = end
                     )
-
-                    if (edited == null) {
-                        viewModel.addTrainingPeriod(updatedPeriod)
-                    } else {
-                        viewModel.updateTrainingPeriod(updatedPeriod)
-                    }
+                    if (periodToEdit == null) viewModel.addTrainingPeriod(updated)
+                    else viewModel.updateTrainingPeriod(updated)
 
                     showDialog = false
                     periodToEdit = null
@@ -190,18 +182,16 @@ fun HomeScreen(
 
         if (showDeleteDialog && selectedPeriods.isNotEmpty()) {
             AlertDialog(
+                title = { Text("¿Eliminar periodos seleccionados?") },
+                text = { Text("Esta acción eliminará todos los periodos seleccionados y sus datos.") },
                 onDismissRequest = {
                     showDeleteDialog = false
                     selectionMode = false
                     selectedPeriods.clear()
                 },
-                title = { Text("¿Eliminar periodos seleccionados?") },
-                text = { Text("Esta acción eliminará todos los periodos seleccionados y sus datos.") },
                 confirmButton = {
                     TextButton(onClick = {
-                        selectedPeriods.forEach {
-                            viewModel.deleteTrainingPeriodWithChildren(it)
-                        }
+                        selectedPeriods.forEach { viewModel.deleteTrainingPeriodWithChildren(it) }
                         Toast.makeText(context, "Periodos eliminados", Toast.LENGTH_SHORT).show()
                         showDeleteDialog = false
                         selectionMode = false

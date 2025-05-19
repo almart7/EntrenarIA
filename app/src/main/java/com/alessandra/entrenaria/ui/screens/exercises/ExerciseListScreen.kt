@@ -5,56 +5,61 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import com.alessandra.entrenaria.data.model.Exercise
-import com.alessandra.entrenaria.navigation.ExerciseDetail
 import com.alessandra.entrenaria.navigation.ExerciseList
-import com.alessandra.entrenaria.navigation.NewExercise
 import com.alessandra.entrenaria.ui.components.BottomNavigationBar
+import com.alessandra.entrenaria.ui.components.RegisterRepsDialog
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModel
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModelFactory
 import com.entrenaria.models.TrainingRepository
+import com.alessandra.entrenaria.ui.components.handleBottomBarNavigation
 
 @Composable
 fun ExerciseListScreen(
     userId: String,
     periodId: String,
     dayId: String,
-    navController: NavController
+    onNavigateToExerciseDetail: (String) -> Unit,
+    onNavigateToNewExercise: () -> Unit,
+    onNavigateToTrainings: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToChat: () -> Unit
 ) {
     val repository = remember { TrainingRepository() }
+    // Factory para inyectar el userId y repositorio al ViewModel
     val viewModel: TrainingViewModel = viewModel(
         factory = TrainingViewModelFactory(repository, userId)
     )
 
+    // Observa el stateFlow para actualizar la lista de ejercicios si hay cambios
     val exercises by viewModel.exercises.collectAsState()
     val context = LocalContext.current
 
-    var selectionMode by remember { mutableStateOf(false) }
-    val selectedExercises = remember { mutableStateListOf<String>() }
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    // Estados para controlar la vista
+    var selectionMode by remember { mutableStateOf(false) } //  Modo selección múltiple
+    val selectedExercises = remember { mutableStateListOf<String>() } // Lista de ejercicios seleccionados
+    var selectedExercise by remember { mutableStateOf<Exercise?>(null) } // Ejercicio seleccionado para registrar repeticiones
+    var showDeleteDialog by remember { mutableStateOf(false) } // Diálogo de eliminar
+    var showRepsDialog by remember { mutableStateOf(false) } // Diálogo para registrar repeticiones
 
-    var showRepsDialog by remember { mutableStateOf(false) }
-    var selectedExercise by remember { mutableStateOf<Exercise?>(null) }
-    var actualRepsInputs by remember { mutableStateOf<List<String>>(emptyList()) }
-    var exerciseNotes by remember { mutableStateOf("") }
-
+    // carga de datos inicial (ejercicios del dia escogido)
     LaunchedEffect(Unit) {
         viewModel.loadExercises(dayId)
     }
 
+    // UI
     Scaffold(
+        // Botón flotante cambiante según el modo de selección
         floatingActionButton = {
+            // Si hay ejercicios selecccionados -> borrar
             if (selectionMode && selectedExercises.isNotEmpty()) {
                 FloatingActionButton(
                     onClick = { showDeleteDialog = true },
@@ -62,18 +67,28 @@ fun ExerciseListScreen(
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.onError)
                 }
+            // Si no hay ejercicios seleccionados -> añadir nuevo (navega a pantalla de añadir ejercicio)
             } else {
                 FloatingActionButton(onClick = {
-                    navController.navigate(NewExercise(periodId, dayId))
+                    //navController.navigate(NewExercise(periodId, dayId)
+                    onNavigateToNewExercise()
                 }) {
                     Icon(Icons.Default.Add, contentDescription = "Añadir ejercicio")
                 }
             }
         },
+        // Menú inferior
         bottomBar = {
             BottomNavigationBar(
-                navController = navController,
-                currentDestination = ExerciseList(periodId, dayId)
+                currentDestination = ExerciseList(periodId, dayId),
+                onNavigate = { destination ->
+                    handleBottomBarNavigation(
+                        destination = destination,
+                        onTrainings = onNavigateToTrainings,
+                        onProfile = onNavigateToProfile,
+                        onChat = onNavigateToChat
+                    )
+                }
             )
         }
     ) { padding ->
@@ -88,7 +103,7 @@ fun ExerciseListScreen(
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-
+            // Lista de ejercicios
             LazyColumn {
                 items(exercises) { exercise ->
                     val isSelected = selectedExercises.contains(exercise.id)
@@ -99,18 +114,24 @@ fun ExerciseListScreen(
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
                             .combinedClickable(
+                                // Un click corto puede tener 2 comportamientos
                                 onClick = {
+                                    // Si estamos en modo selección
                                     if (selectionMode) {
+                                        // Si el ejercicio ya está seleccionado, lo quita
                                         if (isSelected) selectedExercises.remove(exercise.id)
+                                        // si no, lo añade a la selección
                                         else selectedExercises.add(exercise.id)
+                                        // Si después de quitar un ejercicio no queda ninguno seleccionado, se desactiva el modo selección
                                         if (selectedExercises.isEmpty()) selectionMode = false
                                     } else {
-                                        // Navegación a detalle
-                                         navController.navigate(ExerciseDetail(exercise.id))
+                                        // Si no estamos en modo selección, navega a la pantalla de detalles del ejercicio (permite editar objetivos del ejercicio)
+                                        onNavigateToExerciseDetail(exercise.id)
                                     }
                                 },
                                 onLongClick = {
                                     selectionMode = true
+                                    // Añade el ejercicio seleccionado a la lista
                                     if (!selectedExercises.contains(exercise.id)) {
                                         selectedExercises.add(exercise.id)
                                     }
@@ -123,6 +144,7 @@ fun ExerciseListScreen(
                                 .padding(16.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
+                            // Información del ejercicio
                             Column(Modifier.weight(1f)) {
                                 Text(exercise.name, style = MaterialTheme.typography.titleMedium)
                                 exercise.weight?.let {
@@ -133,6 +155,7 @@ fun ExerciseListScreen(
 
                             Row {
                                 if (selectionMode) {
+                                    // Checkbox de selección (si estamos en modo selección)
                                     Checkbox(
                                         checked = isSelected,
                                         onCheckedChange = {
@@ -142,12 +165,12 @@ fun ExerciseListScreen(
                                         }
                                     )
                                 } else {
+                                    // Registro de repeticiones realizadas (abre un diálogo)
                                     IconButton(onClick = {
                                         selectedExercise = exercise
-                                        actualRepsInputs = exercise.sets.map { it.actualReps?.toString() ?: "" }
-                                        exerciseNotes = exercise.notes
                                         showRepsDialog = true
                                     }) {
+                                        // El icono cambia dependiendo de si ya ha repeticiones registradas
                                         Icon(
                                             imageVector = if (hasActualReps) Icons.Default.Check else Icons.Default.PlayArrow,
                                             contentDescription = if (hasActualReps) "Completado" else "Registrar repeticiones",
@@ -162,6 +185,7 @@ fun ExerciseListScreen(
             }
         }
 
+        // Diálogo para eliminar ejercicios
         if (showDeleteDialog && selectedExercises.isNotEmpty()) {
             AlertDialog(
                 onDismissRequest = {
@@ -196,71 +220,17 @@ fun ExerciseListScreen(
             )
         }
 
+        // Diálogo para registrar repeticiones realizadas de un ejercicio
         if (showRepsDialog && selectedExercise != null) {
-            AlertDialog(
-                onDismissRequest = { showRepsDialog = false },
-                title = { Text("Repeticiones realizadas") },
-                text = {
-                    Column {
-                        Text(
-                            text = selectedExercise!!.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-
-                        selectedExercise!!.sets.forEachIndexed { index, set ->
-                            OutlinedTextField(
-                                value = actualRepsInputs.getOrElse(index) { "" },
-                                onValueChange = { newValue ->
-                                    actualRepsInputs = actualRepsInputs.toMutableList().also {
-                                        it[index] = newValue
-                                    }
-                                },
-                                label = {
-                                    Text("Set ${index + 1} (objetivo: ${set.targetRepsMin}-${set.targetRepsMax})")
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        OutlinedTextField(
-                            value = exerciseNotes,
-                            onValueChange = { exerciseNotes = it },
-                            label = { Text("Notas") },
-                            modifier = Modifier.fillMaxWidth(),
-                            maxLines = 4
-                        )
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        val updatedSets = selectedExercise!!.sets.mapIndexed { index, set ->
-                            val reps = actualRepsInputs.getOrNull(index)?.toIntOrNull()
-                            set.copy(actualReps = reps)
-                        }
-                        val updatedExercise = selectedExercise!!.copy(
-                            sets = updatedSets,
-                            notes = exerciseNotes
-                        )
-                        viewModel.updateExercise(updatedExercise)
-                        showRepsDialog = false
-                    }) {
-                        Text("Guardar")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = {
-                        showRepsDialog = false
-                    }) {
-                        Text("Cancelar")
-                    }
+            RegisterRepsDialog(
+                exercise = selectedExercise!!,
+                onDismiss = { showRepsDialog = false },
+                onConfirm = { updated ->
+                    // Guarda el ejercicio actualizado en firestore
+                    viewModel.updateExercise(updated)
+                    showRepsDialog = false
                 }
             )
         }
     }
 }
-

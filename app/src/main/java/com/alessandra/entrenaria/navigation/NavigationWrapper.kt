@@ -6,9 +6,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.alessandra.entrenaria.ui.screens.chat.ChatScreen
 import com.alessandra.entrenaria.ui.screens.exercises.ExerciseDetailScreen
-import com.alessandra.entrenaria.ui.screens.exercises.ExerciseListScreen
 import com.alessandra.entrenaria.ui.screens.exercises.NewExerciseScreen
-import com.alessandra.entrenaria.ui.screens.home.HomeScreen
+import com.alessandra.entrenaria.ui.screens.exercises.ExerciseListScreen
+import com.alessandra.entrenaria.ui.screens.trainingPeriods.TrainingPeriodsScreen
 import com.alessandra.entrenaria.ui.screens.initial.InitialScreen
 import com.alessandra.entrenaria.ui.screens.login.LoginScreen
 import com.alessandra.entrenaria.ui.screens.profile.ProfileScreen
@@ -21,7 +21,7 @@ fun NavigationWrapper(auth: FirebaseAuth) {
     val navController = rememberNavController()
 
     // Estado que observa el login en tiempo real
-    // Evita que el usuario pueda volver atrás  una vez hecho logout
+    // Evita que el usuario pueda volver a una pantalla restringida una vez hecho logout
     val isUserLoggedIn = remember { mutableStateOf(auth.currentUser != null) }
 
     DisposableEffect(Unit) {
@@ -34,14 +34,20 @@ fun NavigationWrapper(auth: FirebaseAuth) {
 
     NavHost(
         navController = navController,
-        startDestination = if (isUserLoggedIn.value) Home else Initial
+        // La pantalla de inicio es Periods si ya hay un usuario autenticado
+        // Si no, la pantalla de inicio es Initial
+        startDestination = if (isUserLoggedIn.value) TrainingPeriods else Initial
     ) {
+
+        // Pantallas
         composable<Initial> {
             InitialScreen(
                 navigateToLogin = { navController.navigate(Login) },
                 navigateToSignUp = { navController.navigate(SignUp) },
                 naviageToHome = {
-                    navController.navigate(Home) {
+                    navController.navigate(TrainingPeriods) {
+                        // Tras el login, se elimina la pila de navegación
+                        // el usuario no puede volver a esta pantalla una vez logeado
                         popUpTo(Initial) { inclusive = true }
                     }
                 }
@@ -51,9 +57,10 @@ fun NavigationWrapper(auth: FirebaseAuth) {
         composable<Login> {
             LoginScreen(
                 auth = auth,
-                navigateBack = { navController.popBackStack() },
                 navigateToHome = {
-                    navController.navigate(Home) {
+                    navController.navigate(TrainingPeriods) {
+                        // Tras el login, se elimina la pila de navegación
+                        // el usuario no puede volver a esta pantalla una vez logeado
                         popUpTo(Login) { inclusive = true }
                     }
                 }
@@ -63,9 +70,10 @@ fun NavigationWrapper(auth: FirebaseAuth) {
         composable<SignUp> {
             SignUpScreen(
                 auth = auth,
-                navigateBack = { navController.popBackStack() },
                 navigateToHome = {
-                    navController.navigate(Home) {
+                    navController.navigate(TrainingPeriods) {
+                        // Tras el login, se elimina la pila de navegación
+                        // el usuario no puede volver a esta pantalla una vez logeado
                         popUpTo(SignUp) { inclusive = true }
                     }
                 }
@@ -74,36 +82,56 @@ fun NavigationWrapper(auth: FirebaseAuth) {
 
         composable<Profile> {
             ProfileScreen(
-                navController = navController,
+                onNavigateToTrainings = { navController.navigate(TrainingPeriods) },
+                onNavigateToProfile = { navController.navigate(Profile) },
+                onNavigateToChat = { navController.navigate(Chat) },
                 onLogout = {
                     auth.signOut()
                     navController.navigate(Initial) {
-                        popUpTo(0) { inclusive = true } // 🔥 limpia toda la pila de navegación
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
         }
 
-        composable<Home> {
-            HomeScreen(
-                userId = auth.currentUser?.uid ?: "",
-                navController = navController,
-                onTrainingPeriodClick = { periodId ->
-                    navController.navigate(TrainingDays(periodId))
-                }
+        // La pantalla de training days sólo muestra los periodos del usuario logeado
+        // Debe aceptar argumentos (userId)
+        composable<TrainingPeriods> {
+            val userId = auth.currentUser?.uid ?: return@composable
+
+            TrainingPeriodsScreen(
+                userId = userId,
+                onNavigateToTrainingDays = { periodId ->
+                    navController.navigate(TrainingDays(periodId)) },
+                // Navegación del menú inferior
+                onNavigateToTrainings = { navController.navigate(TrainingPeriods) },
+                onNavigateToProfile = { navController.navigate(Profile) },
+                onNavigateToChat = {navController.navigate(Chat) }
             )
         }
 
+
+
+        // La pantalla de training days sólo muestra los días del periodo seleccionado y usuario actual
+        // Debe aceptar argumentos (periodId, userId)
         composable<TrainingDays> { backStackEntry ->
-            val periodId = backStackEntry.arguments?.getString("periodId") ?: return@composable
             val userId = auth.currentUser?.uid ?: return@composable
+            val periodId = backStackEntry.arguments?.getString("periodId") ?: return@composable
+
             TrainingDaysScreen(
                 userId = userId,
                 periodId = periodId,
-                navController = navController
+                onNavigateToExercises = { pId, dId -> navController.navigate(ExerciseList(pId, dId))},
+                // Navegación del menú inferior
+                onNavigateToTrainings = { navController.navigate(TrainingPeriods)},
+                onNavigateToProfile = { navController.navigate(Profile)},
+                onNavigateToChat = { navController.navigate(Chat)}
             )
         }
 
+
+        // La pantalla de ejercicios  sólo muestra los ejercicios del día seleccionado
+        // Debe aceptar argumentos (dayId)
         composable<ExerciseList> { backStackEntry ->
             val userId = auth.currentUser?.uid ?: return@composable
             val periodId = backStackEntry.arguments?.getString("periodId") ?: return@composable
@@ -113,9 +141,16 @@ fun NavigationWrapper(auth: FirebaseAuth) {
                 userId = userId,
                 periodId = periodId,
                 dayId = dayId,
-                navController = navController
+                onNavigateToExerciseDetail = { exerciseId ->
+                    navController.navigate(ExerciseDetail(exerciseId)) },
+                onNavigateToNewExercise = { navController.navigate(NewExercise(periodId, dayId)) },
+                // Navegación del menú inferior
+                onNavigateToTrainings = { navController.navigate(TrainingPeriods) },
+                onNavigateToProfile = { navController.navigate(Profile) },
+                onNavigateToChat = { navController.navigate(Chat) }
             )
         }
+
 
         composable<NewExercise> { backStackEntry ->
             val userId = auth.currentUser?.uid ?: return@composable
@@ -128,9 +163,13 @@ fun NavigationWrapper(auth: FirebaseAuth) {
                 periodId = periodId,
                 dayId = dayId,
                 exerciseId = exerciseId,
-                navController = navController
+                onNavigateToTrainings = { navController.navigate(TrainingPeriods) },
+                onNavigateToProfile = { navController.navigate(Profile) },
+                onNavigateToChat = { navController.navigate(Chat) },
+                onBack = { navController.popBackStack() }
             )
         }
+
 
         composable<ExerciseDetail> { backStackEntry ->
             val userId = auth.currentUser?.uid ?: return@composable
@@ -139,16 +178,29 @@ fun NavigationWrapper(auth: FirebaseAuth) {
             ExerciseDetailScreen(
                 userId = userId,
                 exerciseId = exerciseId,
-                navController = navController
+                // Navega a la pantalla de edición del ejercicio (reutiliza NewExerciseScreen)
+                onNavigateToEditExercise = { periodId, dayId, exerciseId ->
+                    navController.navigate(NewExercise(periodId, dayId, exerciseId))
+                },
+                // Navegación del menú inferior
+                onNavigateToTrainings = { navController.navigate(TrainingPeriods) },
+                onNavigateToProfile = { navController.navigate(Profile) },
+                onNavigateToChat = { navController.navigate(Chat) }
             )
         }
 
+
         composable<Chat> {
             val userId = auth.currentUser?.uid ?: return@composable
+
             ChatScreen(
                 userId = userId,
-                navController = navController
+                // Navegación del menú inferior
+                onNavigateToTrainings = { navController.navigate(TrainingPeriods) },
+                onNavigateToProfile = { navController.navigate(Profile) },
+                onNavigateToChat = { navController.navigate(Chat) }
             )
         }
+
     }
 }

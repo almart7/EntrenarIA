@@ -9,17 +9,25 @@ import com.google.firebase.database.*
 
 class ChatRepository(private val database: FirebaseDatabase) {
 
+    // Instancia del modelo Gemini usando clave API (obtenida desde BuildConfig)
     private val model = GenerativeModel(
         modelName = "gemini-1.5-flash",
         apiKey = BuildConfig.apiKey
     )
 
+    /**
+     * Guarda un mensaje en Realtime Database.
+     * Crea una nueva entrada en el chat del usuario y guarda el mensaje con ID.
+     */
     fun sendMessage(userId: String, message: ChatMessage) {
         val ref = database.getReference("chats/$userId/messages").push()
         val messageWithId = message.copy(messageId = ref.key ?: "")
         ref.setValue(messageWithId)
     }
 
+    /**
+     * Escucha en tiempo real los mensajes de un usuario.
+     */
     fun observeMessages(userId: String, onData: (List<ChatMessage>) -> Unit) {
         val ref = database.getReference("chats/$userId/messages")
         ref.orderByChild("timestamp").addValueEventListener(object : ValueEventListener {
@@ -31,22 +39,14 @@ class ChatRepository(private val database: FirebaseDatabase) {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e("ChatRepository", "Error loading messages", error.toException())
+                Log.e("ChatRepository", "Error cargando los mensajes", error.toException())
             }
         })
     }
 
-
-    suspend fun generateGeminiResponse(prompt: String): String? {
-        return try {
-            val response = model.generateContent(prompt)
-            response.text
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
-    }
-
+    /**
+     * Construye un prompt para Gemini basado en los ejercicios del usuario y su pregunta.
+     */
     fun buildPromptFromExercises(exercises: List<ExerciseWithContext>, question: String): String {
         val context = exercises.joinToString("\n") {
             val name = it.exerciseData["name"] ?: "Sin nombre"
@@ -64,4 +64,18 @@ class ChatRepository(private val database: FirebaseDatabase) {
             $question
         """.trimIndent()
     }
+
+    /**
+     * Usa el modelo Gemini para generar una respuesta a partir de un prompt.
+     */
+    suspend fun generateGeminiResponse(prompt: String): String? {
+        return try {
+            val response = model.generateContent(prompt)
+            response.text
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
 }

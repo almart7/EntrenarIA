@@ -2,11 +2,17 @@ package com.alessandra.entrenaria.navigation
 
 import kotlinx.serialization.Serializable
 
+
+// Definición de las rutas de navegación (rutas tipadas)
+/*
+ Este archivo define los destinos de navegación como clases serializables.
+ Esto permite pasar argumentos fácilmente y navegar con seguridad de tipos
+*/
 @Serializable object Initial
 @Serializable object Login
 @Serializable object SignUp
 @Serializable object Profile
-@Serializable object Home
+@Serializable object TrainingPeriods
 @Serializable object Chat
 
 @Serializable data class TrainingDays(val periodId: String)

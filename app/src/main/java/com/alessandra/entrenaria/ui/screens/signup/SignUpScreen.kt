@@ -1,6 +1,5 @@
 package com.alessandra.entrenaria.ui.screens.signup
 
-import android.util.Log
 import android.util.Patterns
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -9,10 +8,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.alessandra.entrenaria.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.firestore.ktx.firestore
@@ -22,28 +19,16 @@ import com.google.firebase.ktx.Firebase
 @Composable
 fun SignUpScreen(
     auth: FirebaseAuth,
-    navigateBack: () -> Unit = {},
     navigateToHome: () -> Unit = {}
 ) {
+    // Toma los contenidos de los TextFields y los guarda en variables
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    // sirve para mostrar Toast
     val context = LocalContext.current
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = { navigateBack() }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.arrow_back),
-                            contentDescription = "Volver"
-                        )
-                    }
-                }
-            )
-        }
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -52,6 +37,7 @@ fun SignUpScreen(
                 .padding(horizontal = 32.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Email
             Text(
                 text = "Email",
                 style = MaterialTheme.typography.titleLarge,
@@ -70,6 +56,7 @@ fun SignUpScreen(
 
             Spacer(Modifier.height(32.dp))
 
+            // Contraseña
             Text(
                 text = "Contraseña",
                 style = MaterialTheme.typography.titleLarge,
@@ -80,7 +67,7 @@ fun SignUpScreen(
                 onValueChange = { password = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = PasswordVisualTransformation(), // Ocultar caracteres contraseña
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                     unfocusedContainerColor = MaterialTheme.colorScheme.secondaryContainer
@@ -89,21 +76,27 @@ fun SignUpScreen(
 
             Spacer(Modifier.height(32.dp))
 
+            // Botón iniciar sesión
             Button(
                 onClick = {
+
+                    // Validaciones
                     if (email.isBlank() || password.isBlank()) {
-                        showToast(context, "Por favor, completa todos los campos")
+                        Toast.makeText(context, "Por favor, completa todos los campos", Toast.LENGTH_LONG).show()
                     } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                        showToast(context, "Introduce un email válido")
+                        Toast.makeText(context, "Introduce un email válido", Toast.LENGTH_LONG).show()
+
                     } else if (password.length < 6) {
-                        showToast(context, "La contraseña debe tener al menos 6 caracteres")
+                        Toast.makeText(context, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_LONG).show()
                     } else {
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
+                                // Si la navegación es correcta, crea un usuario en Firestore
                                 if (task.isSuccessful) {
                                     val db = Firebase.firestore
                                     val user = FirebaseAuth.getInstance().currentUser
                                     user?.let {
+                                        // Tomamos el id y email de Firebase y los guardamos en Firestore
                                         val userData = hashMapOf(
                                             "uid" to it.uid,
                                             "email" to it.email
@@ -112,22 +105,30 @@ fun SignUpScreen(
                                             .document(it.uid)
                                             .set(userData)
                                             .addOnSuccessListener {
-                                                Log.d("Firestore", "Usuario creado en Firestore correctamente")
+                                                //Log.d("Firestore", "Usuario creado en Firestore correctamente")
+                                                navigateToHome()
                                             }
                                             .addOnFailureListener { e ->
-                                                Log.w("Firestore", "Error al crear usuario en Firestore", e)
+                                                //Log.w("Firestore", "Error al crear usuario en Firestore", e)
+                                                Toast.makeText(context, "Error al crear usuario en Firestore", Toast.LENGTH_LONG).show()
+                                                auth.currentUser?.delete()?.addOnSuccessListener {
+                                                    auth.signOut()
+                                                }
                                             }
                                     }
-                                    navigateToHome()
+
                                 } else {
+                                    // Si no, muestra una alerta
                                     val exception = task.exception
                                     if (exception is FirebaseAuthUserCollisionException) {
-                                        showToast(context, "Este email ya está registrado")
+                                        Toast.makeText(context, "Este email ya está registrado", Toast.LENGTH_LONG).show()
                                     } else {
-                                        showToast(
+
+                                        Toast.makeText(
                                             context,
-                                            "Error al registrarse: ${exception?.localizedMessage ?: "Desconocido"}"
-                                        )
+                                            "Error al registrarse: ${exception?.localizedMessage ?: "Desconocido"}",
+                                            Toast.LENGTH_LONG
+                                        ).show()
                                     }
                                 }
                             }
@@ -141,6 +142,3 @@ fun SignUpScreen(
     }
 }
 
-private fun showToast(context: android.content.Context, message: String) {
-    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-}

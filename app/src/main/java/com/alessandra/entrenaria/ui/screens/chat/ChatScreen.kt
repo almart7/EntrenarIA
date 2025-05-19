@@ -11,51 +11,89 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import com.alessandra.entrenaria.data.repository.ChatRepository
-import com.alessandra.entrenaria.navigation.Chat
+import com.alessandra.entrenaria.ui.components.BottomBarItem
 import com.alessandra.entrenaria.ui.components.BottomNavigationBar
 import com.alessandra.entrenaria.ui.components.ChatBubble
+import com.alessandra.entrenaria.ui.components.handleBottomBarNavigation
 import com.alessandra.entrenaria.ui.viewmodel.ChatViewModel
 import com.alessandra.entrenaria.ui.viewmodel.ChatViewModelFactory
 import com.entrenaria.models.TrainingRepository
 import com.google.firebase.database.FirebaseDatabase
 
 @Composable
-fun ChatScreen(userId: String, navController: NavController) {
+fun ChatScreen(
+    userId: String,
+    onNavigateToTrainings: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToChat: () -> Unit
+) {
+    // Instancias de los repositorios que usará el ViewModel
     val chatRepository = remember { ChatRepository(FirebaseDatabase.getInstance()) }
     val trainingRepository = remember { TrainingRepository() }
 
+    // ViewModel con una factory personalizada que inyecta ambos repositorios y el userId
     val viewModel: ChatViewModel = viewModel(
         factory = ChatViewModelFactory(chatRepository, trainingRepository, userId)
     )
 
+    // Estado del chat (mensajes, estado de carga, etc.)
     val uiState by viewModel.uiState
+
+    // Estado local del campo de texto donde el usuario escribe
     var inputText by remember { mutableStateOf("") }
 
     Scaffold(
         bottomBar = {
-            BottomNavigationBar(navController, currentDestination = Chat)
+            // Menú inferior común en toda la app
+            BottomNavigationBar(
+                currentDestination = BottomBarItem.ChatItem,
+                onNavigate = { destination ->
+                    handleBottomBarNavigation(
+                        destination = destination,
+                        onTrainings = onNavigateToTrainings,
+                        onProfile = onNavigateToProfile,
+                        onChat = onNavigateToChat
+                    )
+                }
+            )
         }
     ) { padding ->
         Column(
-            Modifier.fillMaxSize().padding(padding).padding(16.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
         ) {
-            LazyColumn(modifier = Modifier.weight(1f), reverseLayout = true) {
-                items(uiState.messages.reversed()) { ChatBubble(it) }
+            // Lista de mensajes (invertida: los últimos abajo)
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                reverseLayout = true // Muestra los mensajes desde el final
+            ) {
+                // Recorre y muestra cada mensaje usando una burbuja
+                items(uiState.messages.reversed()) { message ->
+                    ChatBubble(message)
+                }
             }
 
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            // Campo de entrada + botón enviar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Campo de texto donde se escribe el mensaje
                 TextField(
                     value = inputText,
                     onValueChange = { inputText = it },
                     modifier = Modifier.weight(1f),
                     placeholder = { Text("Escribe tu mensaje...") }
                 )
+
+                // Botón de enviar
                 IconButton(onClick = {
                     if (inputText.isNotBlank()) {
-                        viewModel.sendMessage(inputText.trim())
-                        inputText = ""
+                        viewModel.sendMessage(inputText.trim()) // Envía el mensaje al ViewModel
+                        inputText = "" // Limpia el campo tras enviar
                     }
                 }) {
                     Icon(Icons.Default.Send, contentDescription = "Enviar")

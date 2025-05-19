@@ -1,15 +1,15 @@
 package com.alessandra.entrenaria.ui.components
 
-import android.app.DatePickerDialog
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.google.firebase.Timestamp
 import com.alessandra.entrenaria.data.model.TrainingDay
 import com.alessandra.entrenaria.util.formatAsDate
+import com.alessandra.entrenaria.util.showDatePicker
+import com.google.firebase.Timestamp
 import java.util.*
 
 @Composable
@@ -22,12 +22,11 @@ fun NewTrainingDayDialog(
     onDismiss: () -> Unit,
     onConfirm: (label: String, notes: String, date: Timestamp) -> Unit
 ) {
-    var selectedDate by remember { mutableStateOf<Date?>(day?.date?.toDate()) }
+    val context = LocalContext.current
 
+    var selectedDate by remember { mutableStateOf(day?.date) }
     var label by remember { mutableStateOf(day?.label ?: "") }
     var notes by remember { mutableStateOf(day?.notes ?: "") }
-
-    val context = LocalContext.current
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -49,27 +48,17 @@ fun NewTrainingDayDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Text("Fecha: ${selectedDate?.formatAsDate() ?: "Sin seleccionar"}")
+                Text("Fecha: ${selectedDate?.toDate()?.formatAsDate() ?: "Sin seleccionar"}")
 
                 Button(onClick = {
-                    val calendar = Calendar.getInstance()
-                    selectedDate?.let { calendar.time = it }
-
-                    val picker = DatePickerDialog(
-                        context,
-                        { _, year, month, dayOfMonth ->
-                            calendar.set(year, month, dayOfMonth)
-                            selectedDate = calendar.time
-                        },
-                        calendar.get(Calendar.YEAR),
-                        calendar.get(Calendar.MONTH),
-                        calendar.get(Calendar.DAY_OF_MONTH)
-                    )
-
-                    if (minDate != null) picker.datePicker.minDate = minDate.time
-                    if (maxDate != null) picker.datePicker.maxDate = maxDate.time
-
-                    picker.show()
+                    showDatePicker(
+                        context = context,
+                        preselected = selectedDate,
+                        minDate = minDate,
+                        maxDate = maxDate
+                    ) { selected ->
+                        selectedDate = selected
+                    }
                 }) {
                     Text("Seleccionar fecha")
                 }
@@ -79,7 +68,7 @@ fun NewTrainingDayDialog(
             TextButton(
                 onClick = {
                     selectedDate?.let {
-                        onConfirm(label, notes, Timestamp(it))
+                        onConfirm(label, notes, it)
                     }
                 },
                 enabled = label.isNotBlank() && selectedDate != null

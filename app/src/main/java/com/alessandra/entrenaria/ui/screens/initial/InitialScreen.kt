@@ -33,41 +33,50 @@ fun InitialScreen(
     naviageToHome: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val auth = remember { FirebaseAuth.getInstance() }
-    val db = remember { FirebaseFirestore.getInstance() }
+    val auth = remember { FirebaseAuth.getInstance() } // FirebaseAuth singleton para autenticar
+    val db = remember { FirebaseFirestore.getInstance() } // Firestore, guardado de datos de usuario
 
+    // Configuración de Google Sign-In
     val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-        .requestIdToken(stringResource(id = R.string.default_web_client_id))
+        .requestIdToken(stringResource(id = R.string.default_web_client_id)) // Firebase Token (strings.xml)
         .requestEmail()
         .build()
 
+    // Cliente de autenticación de Google
     val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
 
+    // Launcher para iniciar el intent de Google Sign-In y recibir su resultado
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        // Procesar el resultado del login
         val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
         try {
             val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
             val idToken = account.idToken
             if (idToken != null) {
+                // Crea credenciales de autenticación con el token de ID de Google
                 val credential = GoogleAuthProvider.getCredential(idToken, null)
                 auth.signInWithCredential(credential)
                     .addOnCompleteListener { authResult ->
+                        // Login exitoso: obtener info del usuario
                         if (authResult.isSuccessful) {
                             val firebaseUser = auth.currentUser
                             if (firebaseUser != null) {
                                 val uid = firebaseUser.uid
                                 val email = firebaseUser.email
 
+                                // Comprobar si el usuario ya existe en Firestore
                                 val userDocRef = db.collection("users").document(uid)
 
                                 userDocRef.get()
                                     .addOnSuccessListener { document ->
                                         if (document.exists()) {
+                                            // Si ya existe, vamos a home screen
                                             Log.d("InitialScreen", "Usuario ya existe en Firestore")
                                             naviageToHome()
                                         } else {
+                                            // Si no existe, crear nuevo documento en firestore con info del usuario
                                             val newUser = hashMapOf(
                                                 "uid" to uid,
                                                 "email" to email,
@@ -75,39 +84,46 @@ fun InitialScreen(
                                                 "age" to 0,
                                                 "gender" to ""
                                             )
-
                                             userDocRef.set(newUser, SetOptions.merge())
+                                                // Si el usuario se crea correctamente, vamos a home screen
                                                 .addOnSuccessListener {
-                                                    Log.d("InitialScreen", "Nuevo usuario creado en Firestore")
+                                                    //Log.d("InitialScreen", "Nuevo usuario creado en Firestore")
                                                     naviageToHome()
                                                 }
+                                                // Si no se crea correctamente, avisar
                                                 .addOnFailureListener { e ->
-                                                    Log.e("InitialScreen", "Error al crear nuevo usuario", e)
+                                                    //Log.e("InitialScreen", "Error al crear nuevo usuario", e)
                                                     Toast.makeText(context, "Error creando usuario", Toast.LENGTH_SHORT).show()
-                                                    naviageToHome()
+                                                    auth.signOut()  // Cerrar sesión de Firebase
                                                 }
                                         }
                                     }
+                                    // Error al obtener datos de usuario
                                     .addOnFailureListener { e ->
-                                        Log.e("InitialScreen", "Error verificando existencia de usuario", e)
+                                        //Log.e("InitialScreen", "Error verificando existencia de usuario", e)
                                         Toast.makeText(context, "Error al obtener datos de usuario", Toast.LENGTH_SHORT).show()
-                                        naviageToHome()
+                                        auth.signOut()  // Cerrar sesión de Firebase
                                     }
                             }
                         } else {
-                            Log.e("InitialScreen", "Error en login con Google", authResult.exception)
+                            // Login fallido, FirebaseAuth rechaza la credencial (token invalido, usuario eliminado...)
+                            //Log.e("InitialScreen", "Error en login con Google", authResult.exception)
                             Toast.makeText(context, "Error en inicio de sesión con Google", Toast.LENGTH_SHORT).show()
+                            auth.signOut()  // Cerrar sesión de Firebase
                         }
                     }
             }
         } catch (e: Exception) {
-            Log.e("InitialScreen", "Google Sign In falló", e)
+            // No se llega a intentar la autenticación con firebase
+            //Log.e("InitialScreen", "Google Sign In falló", e)
             Toast.makeText(context, "Error en autenticación con Google", Toast.LENGTH_SHORT).show()
         }
     }
 
+
+    // UI
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.primary // ✅ Color de fondo aplicado aquí
+        containerColor = MaterialTheme.colorScheme.primary
     ) { padding ->
         Column(
             modifier = Modifier
@@ -119,12 +135,14 @@ fun InitialScreen(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Logo
             Image(
                 painter = painterResource(id = R.drawable.entrenaria_logo),
                 contentDescription = "Logo",
                 modifier = Modifier.size(200.dp)
             )
 
+            // Eslogan
             Text(
                 "Entrena de forma inteligente. Progresa sin límites.",
                 color = MaterialTheme.colorScheme.onPrimary,
@@ -138,6 +156,7 @@ fun InitialScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Registro por email
                 Button(
                     onClick = { navigateToSignUp() },
                     modifier = Modifier
@@ -151,8 +170,10 @@ fun InitialScreen(
 
                 Spacer(Modifier.height(8.dp))
 
+                // Login/Registro con google
                 Button(
                     onClick = {
+                        // Cirerre de sesiones previas para evitar errores
                         googleSignInClient.signOut().addOnCompleteListener {
                             val signInIntent = googleSignInClient.signInIntent
                             launcher.launch(signInIntent)
@@ -183,6 +204,7 @@ fun InitialScreen(
 
                 Spacer(Modifier.height(16.dp))
 
+                // Login por email
                 TextButton(onClick = { navigateToLogin() }) {
                     Text(
                         text = "¿Ya tienes cuenta? Inicia sesión",

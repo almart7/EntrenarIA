@@ -1,6 +1,5 @@
 package com.alessandra.entrenaria.ui.screens.trainingDays
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -16,12 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import com.alessandra.entrenaria.data.model.TrainingDay
-import com.alessandra.entrenaria.navigation.ExerciseList
 import com.alessandra.entrenaria.navigation.TrainingDays
 import com.alessandra.entrenaria.ui.components.BottomNavigationBar
 import com.alessandra.entrenaria.ui.components.NewTrainingDayDialog
+import com.alessandra.entrenaria.ui.components.handleBottomBarNavigation
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModel
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModelFactory
 import com.alessandra.entrenaria.util.formatAsDate
@@ -31,7 +29,10 @@ import com.entrenaria.models.TrainingRepository
 fun TrainingDaysScreen(
     userId: String,
     periodId: String,
-    navController: NavController
+    onNavigateToExercises: (String, String) -> Unit,
+    onNavigateToTrainings: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToChat: () -> Unit
 ) {
     val repository = remember { TrainingRepository() }
     val viewModel: TrainingViewModel = viewModel(
@@ -43,11 +44,10 @@ fun TrainingDaysScreen(
     val context = LocalContext.current
 
     var showDialog by remember { mutableStateOf(false) }
-    var dayToEdit by remember { mutableStateOf<TrainingDay?>(null) }
-
     var selectionMode by remember { mutableStateOf(false) }
     val selectedDays = remember { mutableStateListOf<String>() }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var dayToEdit by remember { mutableStateOf<TrainingDay?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.loadTrainingDays(periodId)
@@ -74,8 +74,15 @@ fun TrainingDaysScreen(
         },
         bottomBar = {
             BottomNavigationBar(
-                navController = navController,
-                currentDestination = TrainingDays(periodId)
+                currentDestination = TrainingDays(periodId),
+                onNavigate = { destination ->
+                    handleBottomBarNavigation(
+                        destination = destination,
+                        onTrainings = onNavigateToTrainings,
+                        onProfile = onNavigateToProfile,
+                        onChat = onNavigateToChat
+                    )
+                }
             )
         }
     ) { padding ->
@@ -85,11 +92,7 @@ fun TrainingDaysScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text(
-                text = "Días de entrenamiento",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+            Text("Días de entrenamiento", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp))
 
             LazyColumn {
                 items(trainingDays.sortedByDescending { it.date }) { day ->
@@ -106,17 +109,7 @@ fun TrainingDaysScreen(
                                         else selectedDays.add(day.id)
                                         if (selectedDays.isEmpty()) selectionMode = false
                                     } else {
-                                        // 👇 LOGS para depuración
-                                        Log.d("TrainingNav", "⏩ Intentando navegar a ExerciseList")
-                                        Log.d("TrainingNav", "🟢 periodId: $periodId")
-                                        Log.d("TrainingNav", "🟢 dayId: ${day.id}")
-
-                                        if (day.id.isNotBlank()) {
-                                            navController.navigate(ExerciseList(periodId, day.id))
-                                        } else {
-                                            Log.w("TrainingNav", "⚠️ ID del día está en blanco. Navegación cancelada.")
-                                            Toast.makeText(context, "Este día aún no está listo para navegar", Toast.LENGTH_SHORT).show()
-                                        }
+                                        onNavigateToExercises(periodId, day.id)
                                     }
                                 },
                                 onLongClick = {
@@ -178,16 +171,15 @@ fun TrainingDaysScreen(
                     dayToEdit = null
                 },
                 onConfirm = { label, notes, date ->
-                    val updated = dayToEdit
                     val trainingDay = TrainingDay(
-                        id = updated?.id ?: "",
+                        id = dayToEdit?.id ?: "",
                         userId = userId,
                         periodId = periodId,
                         date = date,
                         label = label,
                         notes = notes
                     )
-                    if (updated == null) {
+                    if (dayToEdit == null) {
                         viewModel.addTrainingDay(trainingDay)
                     } else {
                         viewModel.updateTrainingDay(trainingDay)
@@ -200,13 +192,13 @@ fun TrainingDaysScreen(
 
         if (showDeleteDialog && selectedDays.isNotEmpty()) {
             AlertDialog(
+                title = { Text("¿Eliminar días seleccionados?") },
+                text = { Text("Se eliminarán todos los días seleccionados.") },
                 onDismissRequest = {
                     showDeleteDialog = false
                     selectionMode = false
                     selectedDays.clear()
                 },
-                title = { Text("¿Eliminar días seleccionados?") },
-                text = { Text("Se eliminarán todos los días seleccionados.") },
                 confirmButton = {
                     TextButton(onClick = {
                         selectedDays.forEach {

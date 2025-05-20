@@ -25,8 +25,9 @@ fun NewTrainingPeriodDialog(
     var endDate by remember { mutableStateOf(period?.endDate) }
 
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.background,
         onDismissRequest = onDismiss,
-        title = { Text(if (period == null) "Nuevo periodo" else "Editar periodo") },
+        title = { Text(if (period == null) "Nuevo Bloque" else "Editar Bloque") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(

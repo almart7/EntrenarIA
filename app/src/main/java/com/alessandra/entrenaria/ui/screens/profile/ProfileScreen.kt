@@ -69,7 +69,7 @@ fun ProfileScreen(
         // Barra de navegación inferior común
         bottomBar = {
             BottomNavigationBar(
-                currentDestination = BottomBarItem.ProfileItem,
+                currentScreenBottomBarItem = BottomBarItem.ProfileItem,
                 onNavigate = { destination ->
                     handleBottomBarNavigation(
                         destination = destination,

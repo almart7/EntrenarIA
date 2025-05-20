@@ -30,6 +30,7 @@ fun RegisterRepsDialog(
     }
 
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.background,
         onDismissRequest = onDismiss,
         title = { Text("Registrar repeticiones") },
         text = {

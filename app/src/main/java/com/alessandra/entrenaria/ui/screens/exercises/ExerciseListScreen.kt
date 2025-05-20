@@ -14,7 +14,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alessandra.entrenaria.data.model.Exercise
-import com.alessandra.entrenaria.navigation.ExerciseList
 import com.alessandra.entrenaria.ui.commonComponents.BottomNavigationBar
 import com.alessandra.entrenaria.ui.commonComponents.ConfirmDeleteDialog
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModel
@@ -22,6 +21,7 @@ import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModelFactory
 import com.alessandra.entrenaria.model.TrainingRepository
 import com.alessandra.entrenaria.ui.commonComponents.handleBottomBarNavigation
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExerciseListScreen(
     userId: String,
@@ -57,6 +57,20 @@ fun ExerciseListScreen(
 
     // UI
     Scaffold(
+        // Barra superior con el título de la pantalla
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Ejercicios del día",
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        },
         // Botón flotante cambiante según el modo de selección
         floatingActionButton = {
             // Si hay ejercicios selecccionados -> borrar
@@ -72,15 +86,17 @@ fun ExerciseListScreen(
                 FloatingActionButton(onClick = {
                     //navController.navigate(NewExercise(periodId, dayId)
                     onNavigateToNewExercise()
-                }) {
-                    Icon(Icons.Default.Add, contentDescription = "Añadir ejercicio")
+                },
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Añadir ejercicio", tint = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         },
         // Menú inferior
         bottomBar = {
             BottomNavigationBar(
-                currentDestination = ExerciseList(periodId, dayId),
+                currentScreenBottomBarItem = null,
                 onNavigate = { destination ->
                     handleBottomBarNavigation(
                         destination = destination,
@@ -98,11 +114,6 @@ fun ExerciseListScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text(
-                text = "Ejercicios del día",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
             // Lista de ejercicios
             LazyColumn {
                 items(exercises) { exercise ->
@@ -136,7 +147,9 @@ fun ExerciseListScreen(
                                         selectedExercises.add(exercise.id)
                                     }
                                 }
-                            )
+                            ),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+
                     ) {
                         Row(
                             modifier = Modifier

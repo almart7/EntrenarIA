@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alessandra.entrenaria.data.model.Exercise
 import com.alessandra.entrenaria.data.model.ExerciseSet
-import com.alessandra.entrenaria.navigation.NewExercise
 import com.alessandra.entrenaria.ui.commonComponents.BottomNavigationBar
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModel
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModelFactory
@@ -96,7 +95,7 @@ fun NewExerciseScreen(
         },
         bottomBar = {
             BottomNavigationBar(
-                currentDestination = NewExercise(periodId, dayId, exerciseId),
+                currentScreenBottomBarItem = null,
                 onNavigate = { destination ->
                     handleBottomBarNavigation(
                         destination = destination,

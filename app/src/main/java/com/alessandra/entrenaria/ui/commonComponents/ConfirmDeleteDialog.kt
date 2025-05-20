@@ -14,6 +14,7 @@ fun ConfirmDeleteDialog(
     if (!visible) return
 
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.background,
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = { Text(text) },

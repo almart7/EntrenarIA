@@ -52,7 +52,7 @@ fun ExerciseDetailScreen(
             },
             bottomBar = {
                 BottomNavigationBar(
-                    currentDestination = ExerciseDetail(ex.id),
+                    currentScreenBottomBarItem = null,
                     onNavigate = { destination ->
                         handleBottomBarNavigation(
                             destination = destination,

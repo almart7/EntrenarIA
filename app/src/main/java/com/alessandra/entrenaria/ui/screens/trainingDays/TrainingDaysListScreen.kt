@@ -17,7 +17,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alessandra.entrenaria.data.model.TrainingDay
-import com.alessandra.entrenaria.navigation.TrainingDays
 import com.alessandra.entrenaria.ui.commonComponents.BottomNavigationBar
 import com.alessandra.entrenaria.ui.commonComponents.ConfirmDeleteDialog
 import com.alessandra.entrenaria.ui.commonComponents.handleBottomBarNavigation
@@ -27,6 +26,7 @@ import com.alessandra.entrenaria.util.formatAsDate
 import com.alessandra.entrenaria.util.isToday
 import com.alessandra.entrenaria.model.TrainingRepository
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrainingDaysScreen(
     userId: String,
@@ -57,6 +57,20 @@ fun TrainingDaysScreen(
     }
 
     Scaffold(
+        // Barra superior con el título de la pantalla
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Días de Entrenamiento",
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        },
         floatingActionButton = {
             if (selectionMode && selectedDays.isNotEmpty()) {
                 FloatingActionButton(
@@ -69,14 +83,16 @@ fun TrainingDaysScreen(
                 FloatingActionButton(onClick = {
                     dayToEdit = null
                     showDialog = true
-                }) {
-                    Icon(Icons.Default.Add, contentDescription = "Agregar día")
+                },
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Agregar día", tint = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         },
         bottomBar = {
             BottomNavigationBar(
-                currentDestination = TrainingDays(periodId),
+                currentScreenBottomBarItem = null,
                 onNavigate = { destination ->
                     handleBottomBarNavigation(
                         destination = destination,
@@ -94,8 +110,6 @@ fun TrainingDaysScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text("Días de entrenamiento", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp))
-
             LazyColumn {
                 items(trainingDays.sortedBy { it.date }) { day ->
                     val isSelected = selectedDays.contains(day.id)
@@ -125,7 +139,7 @@ fun TrainingDaysScreen(
                         colors = if (isToday)
                             CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
                         else
-                            CardDefaults.cardColors()
+                            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                     ) {
                         Row(
                             modifier = Modifier

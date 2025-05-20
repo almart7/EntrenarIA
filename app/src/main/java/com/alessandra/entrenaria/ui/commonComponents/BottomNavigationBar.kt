@@ -2,7 +2,7 @@ package com.alessandra.entrenaria.ui.commonComponents
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubble
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -15,45 +15,52 @@ import com.alessandra.entrenaria.navigation.Chat
 sealed class BottomBarItem(
     val label: String,
     val icon: ImageVector,
-    val destination: Any
+    val destination: Any  // Pagina actual
 ) {
-    object HomeItem : BottomBarItem("Inicio", Icons.Default.Home, TrainingPeriods)
+    object TrainingsItem : BottomBarItem("Tus entrenamientos", Icons.Default.FitnessCenter, TrainingPeriods)
     object ProfileItem : BottomBarItem("Perfil", Icons.Default.Person, Profile)
     object ChatItem : BottomBarItem("Entrenador IA", Icons.Default.ChatBubble, Chat)
 }
 
 @Composable
 fun BottomNavigationBar(
-    currentDestination: Any?,
+    currentScreenBottomBarItem: BottomBarItem?,
     onNavigate: (Any) -> Unit
 ) {
     val items = listOf(
-        BottomBarItem.HomeItem,
+        BottomBarItem.TrainingsItem,
         BottomBarItem.ProfileItem,
         BottomBarItem.ChatItem
     )
 
     NavigationBar(
-        containerColor = MaterialTheme.colorScheme.primaryContainer, // o primary
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer  // o onPrimary
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
     ) {
-        items.forEach { item ->
-            val selected = currentDestination == item.destination
+        items.forEach { loopItem ->
+            // Compara por tipo para cubrir casos donde currentDestination es instancia diferente pero del mismo destino
+            val selected = currentScreenBottomBarItem?.destination == loopItem.destination
 
             NavigationBarItem(
                 selected = selected,
                 onClick = {
-                    if (!selected) {
-                        onNavigate(item.destination)
+                    // No navega si ya está en esa pagina
+                    if (currentScreenBottomBarItem?.destination != loopItem.destination) {
+                        onNavigate(loopItem.destination)
                     }
                 },
                 icon = {
                     Icon(
-                        imageVector = item.icon,
-                        contentDescription = item.label
+                        imageVector = loopItem.icon,
+                        contentDescription = loopItem.label
                     )
                 },
-                label = { Text(item.label) }
+                label = { Text(loopItem.label) },
+
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary
+                )
             )
         }
     }
@@ -67,8 +74,8 @@ fun handleBottomBarNavigation(
     onChat: () -> Unit
 ) {
     when (destination) {
-        BottomBarItem.HomeItem.destination -> onTrainings()
-        BottomBarItem.ProfileItem.destination -> onProfile()
-        BottomBarItem.ChatItem.destination -> onChat()
+        TrainingPeriods -> onTrainings()
+        Profile -> onProfile()
+        Chat -> onChat()
     }
 }

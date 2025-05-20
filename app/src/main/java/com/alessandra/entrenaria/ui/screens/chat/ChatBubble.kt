@@ -30,7 +30,7 @@ fun ChatBubble(message: ChatMessage) {
             color = if (isUser)
                 MaterialTheme.colorScheme.primaryContainer
             else
-                MaterialTheme.colorScheme.surfaceVariant,
+                MaterialTheme.colorScheme.secondaryContainer,
             shape = RoundedCornerShape(8.dp), // Bordes redondeados para la burbuja
             modifier = Modifier.padding(horizontal = 8.dp)
         ) {
@@ -42,7 +42,7 @@ fun ChatBubble(message: ChatMessage) {
                 color = if (isUser)
                     MaterialTheme.colorScheme.onPrimaryContainer
                 else
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                    MaterialTheme.colorScheme.onSecondaryContainer
             )
         }
     }

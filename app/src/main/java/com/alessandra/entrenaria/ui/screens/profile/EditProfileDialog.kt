@@ -34,6 +34,7 @@ fun EditProfileDialog(
     var expanded by remember { mutableStateOf(false) }
 
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.background,
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(

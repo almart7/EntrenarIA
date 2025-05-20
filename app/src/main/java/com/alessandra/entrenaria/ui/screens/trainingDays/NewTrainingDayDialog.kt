@@ -29,6 +29,7 @@ fun NewTrainingDayDialog(
     var notes by remember { mutableStateOf(day?.notes ?: "") }
 
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.background,
         onDismissRequest = onDismiss,
         title = { Text(if (day == null) "Nuevo día" else "Editar día") },
         text = {

@@ -17,7 +17,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alessandra.entrenaria.data.model.TrainingPeriod
-import com.alessandra.entrenaria.navigation.TrainingPeriods
 import com.alessandra.entrenaria.ui.commonComponents.BottomNavigationBar
 import com.alessandra.entrenaria.ui.commonComponents.handleBottomBarNavigation
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModel
@@ -25,8 +24,10 @@ import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModelFactory
 import com.alessandra.entrenaria.util.formatAsDate
 import com.alessandra.entrenaria.util.isTodayInRange
 import com.alessandra.entrenaria.model.TrainingRepository
+import com.alessandra.entrenaria.ui.commonComponents.BottomBarItem
 import com.alessandra.entrenaria.ui.commonComponents.ConfirmDeleteDialog
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrainingPeriodsScreen(
     userId: String,
@@ -53,6 +54,20 @@ fun TrainingPeriodsScreen(
     }
 
     Scaffold(
+        // Barra superior con el título de la pantalla
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Tus Bloques de Entrenamiento",
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        },
         floatingActionButton = {
             if (selectionMode && selectedPeriods.isNotEmpty()) {
                 FloatingActionButton(
@@ -65,14 +80,16 @@ fun TrainingPeriodsScreen(
                 FloatingActionButton(onClick = {
                     periodToEdit = null
                     showDialog = true
-                }) {
-                    Icon(Icons.Default.Add, contentDescription = "Agregar periodo")
+                },
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Agregar periodo", tint = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         },
         bottomBar = {
             BottomNavigationBar(
-                currentDestination = TrainingPeriods,
+                currentScreenBottomBarItem = BottomBarItem.TrainingsItem,
                 onNavigate = { destination ->
                     handleBottomBarNavigation(
                         destination = destination,
@@ -90,8 +107,6 @@ fun TrainingPeriodsScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text("Tus entrenamientos", style = MaterialTheme.typography.titleLarge)
-
             LazyColumn {
                 items(periods.sortedByDescending { it.startDate }) { period ->
                     val isSelected = selectedPeriods.contains(period.id)
@@ -123,7 +138,7 @@ fun TrainingPeriodsScreen(
                         colors = if (containsToday)
                             CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
                         else
-                            CardDefaults.cardColors()
+                            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                     ) {
                         Row(
                             modifier = Modifier

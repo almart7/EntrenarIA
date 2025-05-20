@@ -20,6 +20,7 @@ import com.alessandra.entrenaria.ui.viewmodel.ChatViewModelFactory
 import com.alessandra.entrenaria.model.TrainingRepository
 import com.google.firebase.database.FirebaseDatabase
 
+
 @Composable
 fun ChatScreen(
     userId: String,
@@ -46,7 +47,7 @@ fun ChatScreen(
         bottomBar = {
             // Menú inferior común en toda la app
             BottomNavigationBar(
-                currentDestination = BottomBarItem.ChatItem,
+                currentScreenBottomBarItem = BottomBarItem.ChatItem,
                 onNavigate = { destination ->
                     handleBottomBarNavigation(
                         destination = destination,

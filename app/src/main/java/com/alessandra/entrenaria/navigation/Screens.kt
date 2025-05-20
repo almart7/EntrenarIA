@@ -9,8 +9,6 @@ import kotlinx.serialization.Serializable
  Esto permite pasar argumentos fácilmente y navegar con seguridad de tipos
 */
 @Serializable object Initial
-@Serializable object Login
-@Serializable object SignUp
 @Serializable object Profile
 @Serializable object TrainingPeriods
 @Serializable object Chat

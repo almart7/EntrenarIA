@@ -1,6 +1,9 @@
 package com.alessandra.entrenaria.navigation
 
+import InitialScreen
+import InitialViewModel
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -9,10 +12,7 @@ import com.alessandra.entrenaria.ui.screens.exercises.ExerciseDetailScreen
 import com.alessandra.entrenaria.ui.screens.exercises.NewExerciseScreen
 import com.alessandra.entrenaria.ui.screens.exercises.ExerciseListScreen
 import com.alessandra.entrenaria.ui.screens.trainingPeriods.TrainingPeriodsScreen
-import com.alessandra.entrenaria.ui.screens.initial.InitialScreen
-import com.alessandra.entrenaria.ui.screens.login.LoginScreen
 import com.alessandra.entrenaria.ui.screens.profile.ProfileScreen
-import com.alessandra.entrenaria.ui.screens.signup.SignUpScreen
 import com.alessandra.entrenaria.ui.screens.trainingDays.TrainingDaysScreen
 import com.google.firebase.auth.FirebaseAuth
 
@@ -41,54 +41,14 @@ fun NavigationWrapper(auth: FirebaseAuth) {
 
         // Pantallas
         composable<Initial> {
+            val initialViewModel: InitialViewModel = viewModel()
             InitialScreen(
-                navigateToLogin = { navController.navigate(Login) },
-                navigateToSignUp = { navController.navigate(SignUp) },
-                naviageToHome = {
+                navigateToHome = {
                     navController.navigate(TrainingPeriods) {
-                        // Tras el login, se elimina la pila de navegación
-                        // el usuario no puede volver a esta pantalla una vez logeado
                         popUpTo(Initial) { inclusive = true }
                     }
-                }
-            )
-        }
-
-        composable<Login> {
-            LoginScreen(
-                auth = auth,
-                navigateToHome = {
-                    navController.navigate(TrainingPeriods) {
-                        // Tras el login, se elimina la pila de navegación
-                        // el usuario no puede volver a esta pantalla una vez logeado
-                        popUpTo(Login) { inclusive = true }
-                    }
                 },
-                navigateToInitial = {
-                    navController.navigate(Initial) {
-                        // Elimina Login de la pila tras cancelar
-                        popUpTo(Login) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        composable<SignUp> {
-            SignUpScreen(
-                auth = auth,
-                navigateToHome = {
-                    navController.navigate(TrainingPeriods) {
-                        // Tras el login, se elimina la pila de navegación
-                        // el usuario no puede volver a esta pantalla una vez logeado
-                        popUpTo(SignUp) { inclusive = true }
-                    }
-                },
-                navigateToInitial = {
-                    navController.navigate(Initial) {
-                        // Elimina Login de la pila tras cancelar
-                        popUpTo(SignUp) { inclusive = true }
-                    }
-                }
+                viewModel = initialViewModel
             )
         }
 

@@ -1,14 +1,10 @@
-package com.alessandra.entrenaria.ui.screens.initial
-
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,197 +15,140 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alessandra.entrenaria.R
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 
 @Composable
 fun InitialScreen(
-    navigateToLogin: () -> Unit,
-    navigateToSignUp: () -> Unit ,
-    naviageToHome: () -> Unit
+    navigateToHome: () -> Unit,
+    viewModel: InitialViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val auth = remember { FirebaseAuth.getInstance() } // FirebaseAuth singleton para autenticar
-    val db = remember { FirebaseFirestore.getInstance() } // Firestore, guardado de datos de usuario
 
-    // Configuración de Google Sign-In
-    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-        .requestIdToken(stringResource(id = R.string.default_web_client_id)) // Firebase Token (strings.xml)
+    // Configuración Google Sign-In (igual que antes)
+    val gso = com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(
+        com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN
+    )
+        .requestIdToken(stringResource(id = R.string.default_web_client_id))
         .requestEmail()
         .build()
 
-    // Cliente de autenticación de Google
-    val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
+    val googleSignInClient = androidx.compose.runtime.remember {
+        com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(context, gso)
+    }
 
-    // Launcher para iniciar el intent de Google Sign-In y recibir su resultado
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        // Procesar el resultado del login
-        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        val task = com.google.android.gms.auth.api.signin.GoogleSignIn.getSignedInAccountFromIntent(result.data)
         try {
             val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
             val idToken = account.idToken
             if (idToken != null) {
-                // Crea credenciales de autenticación con el token de ID de Google
-                val credential = GoogleAuthProvider.getCredential(idToken, null)
-                auth.signInWithCredential(credential)
-                    .addOnCompleteListener { authResult ->
-                        // Login exitoso: obtener info del usuario
-                        if (authResult.isSuccessful) {
-                            val firebaseUser = auth.currentUser
-                            if (firebaseUser != null) {
-                                val uid = firebaseUser.uid
-                                val email = firebaseUser.email
-
-                                // Comprobar si el usuario ya existe en Firestore
-                                val userDocRef = db.collection("users").document(uid)
-
-                                userDocRef.get()
-                                    .addOnSuccessListener { document ->
-                                        if (document.exists()) {
-                                            // Si ya existe, vamos a home screen
-                                            Log.d("InitialScreen", "Usuario ya existe en Firestore")
-                                            naviageToHome()
-                                        } else {
-                                            // Si no existe, crear nuevo documento en firestore con info del usuario
-                                            val newUser = hashMapOf(
-                                                "uid" to uid,
-                                                "email" to email,
-                                                "name" to "",
-                                                "age" to 0,
-                                                "gender" to ""
-                                            )
-                                            userDocRef.set(newUser, SetOptions.merge())
-                                                // Si el usuario se crea correctamente, vamos a home screen
-                                                .addOnSuccessListener {
-                                                    naviageToHome()
-                                                }
-                                                // Si no se crea correctamente, avisar
-                                                .addOnFailureListener { e ->
-                                                    Toast.makeText(context, "Error creando usuario", Toast.LENGTH_SHORT).show()
-                                                    auth.signOut()  // Cerrar sesión de Firebase
-                                                }
-                                        }
-                                    }
-                                    // Error al obtener datos de usuario
-                                    .addOnFailureListener { e ->
-                                        Toast.makeText(context, "Error al obtener datos de usuario", Toast.LENGTH_SHORT).show()
-                                        auth.signOut()  // Cerrar sesión de Firebase
-                                    }
-                            }
-                        } else {
-                            // Login fallido, FirebaseAuth rechaza la credencial
-                            Toast.makeText(context, "Error en inicio de sesión con Google", Toast.LENGTH_SHORT).show()
-                            auth.signOut()  // Cerrar sesión de Firebase
-                        }
-                    }
+                viewModel.loginWithGoogle(idToken)
             }
         } catch (e: Exception) {
-            // No se llega a intentar la autenticación con firebase
             Toast.makeText(context, "Error en autenticación con Google", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // UI
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.primary // Usa color del tema
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Spacer(modifier = Modifier.height(32.dp))
+    val loginState by viewModel.loginState.collectAsState()
 
-            // Logo
-            Image(
-                painter = painterResource(id = R.drawable.entrenaria_logo),
-                contentDescription = "Logo",
-                modifier = Modifier.size(200.dp)
-            )
-
-            // Eslogan
-            Text(
-                "Entrena de forma inteligente",
-                color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 16.dp, bottom = 48.dp)
-            )
-
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+    when (loginState) {
+        is InitialViewModel.LoginState.Loading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                // Registro por email
-                Button(
-                    onClick = { navigateToSignUp() },
+                CircularProgressIndicator()
+            }
+        }
+        is InitialViewModel.LoginState.Success -> {
+            LaunchedEffect(Unit) {
+                navigateToHome()
+            }
+        }
+        is InitialViewModel.LoginState.Error -> {
+            val error = (loginState as InitialViewModel.LoginState.Error).message
+            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+            // Evitar bucle de errores
+            LaunchedEffect(error) {
+                viewModel._loginState.value = InitialViewModel.LoginState.Idle
+            }
+        }
+        else -> {
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.primary
+            ) { padding ->
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .padding(horizontal = 32.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                 ) {
-                    Text("Regístrate con Email", color = MaterialTheme.colorScheme.onSecondary)
-                }
+                    Spacer(modifier = Modifier.height(32.dp))
 
-                Spacer(Modifier.height(8.dp))
-
-                // Login/Registro con google
-                Button(
-                    onClick = {
-                        // Cierre de sesiones previas para evitar errores
-                        googleSignInClient.signOut().addOnCompleteListener {
-                            val signInIntent = googleSignInClient.signInIntent
-                            launcher.launch(signInIntent)
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .padding(horizontal = 32.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                ) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        Image(
-                            painter = painterResource(id = R.drawable.google),
-                            contentDescription = "Continúa con Google",
-                            modifier = Modifier
-                                .padding(start = 16.dp)
-                                .size(16.dp)
-                                .align(Alignment.CenterStart)
-                        )
-                        Text(
-                            "Continúa con Google",
-                            color = MaterialTheme.colorScheme.onSecondary,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // Login por email
-                TextButton(onClick = { navigateToLogin() }) {
-                    Text(
-                        text = "¿Ya tienes cuenta? Inicia sesión",
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        fontWeight = FontWeight.SemiBold
+                    // Logo
+                    Image(
+                        painter = painterResource(id = R.drawable.entrenaria_logo),
+                        contentDescription = "Logo",
+                        modifier = Modifier.size(200.dp)
                     )
+
+                    // Eslogan
+                    Text(
+                        "Entrena de forma inteligente",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 16.dp, bottom = 48.dp)
+                    )
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+
+                        // Login/Registro con Google
+                        Button(
+                            onClick = {
+                                googleSignInClient.signOut().addOnCompleteListener {
+                                    val signInIntent = googleSignInClient.signInIntent
+                                    launcher.launch(signInIntent)
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .padding(horizontal = 32.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                        ) {
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.google),
+                                    contentDescription = "Continúa con Google",
+                                    modifier = Modifier
+                                        .padding(start = 16.dp)
+                                        .size(16.dp)
+                                        .align(Alignment.CenterStart)
+                                )
+                                Text(
+                                    "Continúa con Google",
+                                    color = MaterialTheme.colorScheme.onSecondary,
+                                    modifier = Modifier.align(Alignment.Center)
+                                )
+                            }
+                        }
+
+                    }
+
+                    Spacer(modifier = Modifier.height(32.dp))
                 }
             }
-
-            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
+

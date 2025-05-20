@@ -28,9 +28,9 @@ import com.google.firebase.firestore.SetOptions
 
 @Composable
 fun InitialScreen(
-    navigateToLogin: () -> Unit = {},
-    navigateToSignUp: () -> Unit = {},
-    naviageToHome: () -> Unit = {}
+    navigateToLogin: () -> Unit,
+    navigateToSignUp: () -> Unit ,
+    naviageToHome: () -> Unit
 ) {
     val context = LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() } // FirebaseAuth singleton para autenticar
@@ -87,12 +87,10 @@ fun InitialScreen(
                                             userDocRef.set(newUser, SetOptions.merge())
                                                 // Si el usuario se crea correctamente, vamos a home screen
                                                 .addOnSuccessListener {
-                                                    //Log.d("InitialScreen", "Nuevo usuario creado en Firestore")
                                                     naviageToHome()
                                                 }
                                                 // Si no se crea correctamente, avisar
                                                 .addOnFailureListener { e ->
-                                                    //Log.e("InitialScreen", "Error al crear nuevo usuario", e)
                                                     Toast.makeText(context, "Error creando usuario", Toast.LENGTH_SHORT).show()
                                                     auth.signOut()  // Cerrar sesión de Firebase
                                                 }
@@ -100,14 +98,12 @@ fun InitialScreen(
                                     }
                                     // Error al obtener datos de usuario
                                     .addOnFailureListener { e ->
-                                        //Log.e("InitialScreen", "Error verificando existencia de usuario", e)
                                         Toast.makeText(context, "Error al obtener datos de usuario", Toast.LENGTH_SHORT).show()
                                         auth.signOut()  // Cerrar sesión de Firebase
                                     }
                             }
                         } else {
-                            // Login fallido, FirebaseAuth rechaza la credencial (token invalido, usuario eliminado...)
-                            //Log.e("InitialScreen", "Error en login con Google", authResult.exception)
+                            // Login fallido, FirebaseAuth rechaza la credencial
                             Toast.makeText(context, "Error en inicio de sesión con Google", Toast.LENGTH_SHORT).show()
                             auth.signOut()  // Cerrar sesión de Firebase
                         }
@@ -115,15 +111,13 @@ fun InitialScreen(
             }
         } catch (e: Exception) {
             // No se llega a intentar la autenticación con firebase
-            //Log.e("InitialScreen", "Google Sign In falló", e)
             Toast.makeText(context, "Error en autenticación con Google", Toast.LENGTH_SHORT).show()
         }
     }
 
-
     // UI
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.primary
+        containerColor = MaterialTheme.colorScheme.primary // Usa color del tema
     ) { padding ->
         Column(
             modifier = Modifier
@@ -144,7 +138,7 @@ fun InitialScreen(
 
             // Eslogan
             Text(
-                "Entrena de forma inteligente. Progresa sin límites.",
+                "Entrena de forma inteligente",
                 color = MaterialTheme.colorScheme.onPrimary,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
@@ -173,7 +167,7 @@ fun InitialScreen(
                 // Login/Registro con google
                 Button(
                     onClick = {
-                        // Cirerre de sesiones previas para evitar errores
+                        // Cierre de sesiones previas para evitar errores
                         googleSignInClient.signOut().addOnCompleteListener {
                             val signInIntent = googleSignInClient.signInIntent
                             launcher.launch(signInIntent)

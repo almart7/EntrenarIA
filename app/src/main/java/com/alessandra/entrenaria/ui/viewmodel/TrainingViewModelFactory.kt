@@ -2,7 +2,7 @@ package com.alessandra.entrenaria.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.entrenaria.models.TrainingRepository
+import com.alessandra.entrenaria.model.TrainingRepository
 
 class TrainingViewModelFactory(
     private val repository: TrainingRepository,

@@ -12,13 +12,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alessandra.entrenaria.data.repository.ChatRepository
-import com.alessandra.entrenaria.ui.components.BottomBarItem
-import com.alessandra.entrenaria.ui.components.BottomNavigationBar
-import com.alessandra.entrenaria.ui.components.ChatBubble
-import com.alessandra.entrenaria.ui.components.handleBottomBarNavigation
+import com.alessandra.entrenaria.ui.commonComponents.BottomBarItem
+import com.alessandra.entrenaria.ui.commonComponents.BottomNavigationBar
+import com.alessandra.entrenaria.ui.commonComponents.handleBottomBarNavigation
 import com.alessandra.entrenaria.ui.viewmodel.ChatViewModel
 import com.alessandra.entrenaria.ui.viewmodel.ChatViewModelFactory
-import com.entrenaria.models.TrainingRepository
+import com.alessandra.entrenaria.model.TrainingRepository
 import com.google.firebase.database.FirebaseDatabase
 
 @Composable
@@ -75,6 +74,8 @@ fun ChatScreen(
                     ChatBubble(message)
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Campo de entrada + botón enviar
             Row(

@@ -12,12 +12,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alessandra.entrenaria.navigation.ExerciseDetail
-import com.alessandra.entrenaria.ui.components.BottomNavigationBar
-import com.alessandra.entrenaria.ui.components.RegisterRepsDialog
-import com.alessandra.entrenaria.ui.components.handleBottomBarNavigation
+import com.alessandra.entrenaria.ui.commonComponents.BottomNavigationBar
+import com.alessandra.entrenaria.ui.commonComponents.handleBottomBarNavigation
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModel
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModelFactory
-import com.entrenaria.models.TrainingRepository
+import com.alessandra.entrenaria.model.TrainingRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,23 +71,26 @@ fun ExerciseDetailScreen(
                     .fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Información básica del ejercicio
-                ex.weight?.let { Text("Peso: $it kg") }
+                // peso, si hay
+                ex.weight?.let {
+                    Text("Peso:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Text ("$it kg")
+                }
 
                 // Instrucciones del ejercicio (si las hay)
                 if (!ex.instructions.isNullOrBlank()) {
-                    Text("Instrucciones:", style = MaterialTheme.typography.labelMedium)
+                    Text("Instrucciones:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     Text(ex.instructions)
                 }
 
                 // Notas del usuario (si las hay)
                 if (!ex.notes.isNullOrBlank()) {
-                    Text("Notas:", style = MaterialTheme.typography.labelMedium)
+                    Text("Notas:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     Text(ex.notes)
                 }
 
                 // Mostrar los sets en formato limpio y claro
-                Text("Sets realizados:", style = MaterialTheme.typography.labelMedium)
+                Text("Sets realizados:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                 ex.sets.forEachIndexed { index, set ->
                     val actual = set.actualReps?.toString() ?: "–"
                     Text(
@@ -107,11 +109,14 @@ fun ExerciseDetailScreen(
 
                 // Botón para editar los objetivos (navega a pantalla de edición)
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    Button(
+                    OutlinedButton(
                         onClick = {
                             onNavigateToEditExercise(ex.periodId, ex.dayId, ex.id)
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     ) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar objetivos")
                         Spacer(Modifier.width(8.dp))

@@ -63,6 +63,12 @@ fun NavigationWrapper(auth: FirebaseAuth) {
                         // el usuario no puede volver a esta pantalla una vez logeado
                         popUpTo(Login) { inclusive = true }
                     }
+                },
+                navigateToInitial = {
+                    navController.navigate(Initial) {
+                        // Elimina Login de la pila tras cancelar
+                        popUpTo(Login) { inclusive = true }
+                    }
                 }
             )
         }
@@ -74,6 +80,12 @@ fun NavigationWrapper(auth: FirebaseAuth) {
                     navController.navigate(TrainingPeriods) {
                         // Tras el login, se elimina la pila de navegación
                         // el usuario no puede volver a esta pantalla una vez logeado
+                        popUpTo(SignUp) { inclusive = true }
+                    }
+                },
+                navigateToInitial = {
+                    navController.navigate(Initial) {
+                        // Elimina Login de la pila tras cancelar
                         popUpTo(SignUp) { inclusive = true }
                     }
                 }

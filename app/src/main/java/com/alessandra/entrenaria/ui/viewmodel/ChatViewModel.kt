@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.alessandra.entrenaria.data.model.ChatMessage
 import com.alessandra.entrenaria.data.repository.ChatRepository
-import com.entrenaria.models.TrainingRepository
+import com.alessandra.entrenaria.model.TrainingRepository
 import kotlinx.coroutines.launch
 
 class ChatViewModel(

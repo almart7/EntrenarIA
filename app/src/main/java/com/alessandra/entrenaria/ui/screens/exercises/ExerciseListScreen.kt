@@ -15,12 +15,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alessandra.entrenaria.data.model.Exercise
 import com.alessandra.entrenaria.navigation.ExerciseList
-import com.alessandra.entrenaria.ui.components.BottomNavigationBar
-import com.alessandra.entrenaria.ui.components.RegisterRepsDialog
+import com.alessandra.entrenaria.ui.commonComponents.BottomNavigationBar
+import com.alessandra.entrenaria.ui.commonComponents.ConfirmDeleteDialog
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModel
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModelFactory
-import com.entrenaria.models.TrainingRepository
-import com.alessandra.entrenaria.ui.components.handleBottomBarNavigation
+import com.alessandra.entrenaria.model.TrainingRepository
+import com.alessandra.entrenaria.ui.commonComponents.handleBottomBarNavigation
 
 @Composable
 fun ExerciseListScreen(
@@ -151,6 +151,21 @@ fun ExerciseListScreen(
                                     Text("Peso: ${it} kg")
                                 }
                                 Text("Sets: ${exercise.sets.size}")
+
+                                // Mostrar instrucciones truncadas (máx 50 caracteres)
+                                if (!exercise.instructions.isNullOrBlank()) {
+                                    val preview = if (exercise.instructions.length > 50)
+                                        exercise.instructions.take(50) + "..."
+                                    else
+                                        exercise.instructions
+
+                                    Text(
+                                        text = preview,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                }
                             }
 
                             Row {
@@ -186,39 +201,24 @@ fun ExerciseListScreen(
         }
 
         // Diálogo para eliminar ejercicios
-        if (showDeleteDialog && selectedExercises.isNotEmpty()) {
-            AlertDialog(
-                onDismissRequest = {
-                    showDeleteDialog = false
-                    selectionMode = false
-                    selectedExercises.clear()
-                },
-                title = { Text("¿Eliminar ejercicios seleccionados?") },
-                text = { Text("Se eliminarán todos los ejercicios seleccionados.") },
-                confirmButton = {
-                    TextButton(onClick = {
-                        selectedExercises.forEach {
-                            viewModel.deleteExercise(it)
-                        }
-                        Toast.makeText(context, "Ejercicios eliminados", Toast.LENGTH_SHORT).show()
-                        showDeleteDialog = false
-                        selectionMode = false
-                        selectedExercises.clear()
-                    }) {
-                        Text("Eliminar", color = MaterialTheme.colorScheme.error)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = {
-                        showDeleteDialog = false
-                        selectionMode = false
-                        selectedExercises.clear()
-                    }) {
-                        Text("Cancelar")
-                    }
-                }
-            )
-        }
+        ConfirmDeleteDialog(
+            visible = showDeleteDialog && selectedExercises.isNotEmpty(),
+            title = "¿Eliminar ejercicios seleccionados?",
+            text = "Esta acción eliminará todos los ejercicios seleccionados y sus datos.",
+            onConfirm = {
+                selectedExercises.forEach { viewModel.deleteExercise(it) }
+                Toast.makeText(context, "Ejercicios eliminados", Toast.LENGTH_SHORT).show()
+                showDeleteDialog = false
+                selectionMode = false
+                selectedExercises.clear()
+            },
+            onDismiss = {
+                showDeleteDialog = false
+                selectionMode = false
+                selectedExercises.clear()
+            }
+        )
+
 
         // Diálogo para registrar repeticiones realizadas de un ejercicio
         if (showRepsDialog && selectedExercise != null) {

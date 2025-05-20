@@ -1,5 +1,4 @@
-package com.alessandra.entrenaria.ui.components
-
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,13 +18,14 @@ fun NewTrainingDayDialog(
     day: TrainingDay? = null,
     minDate: Date? = null,
     maxDate: Date? = null,
+    defaultLabel: String = "",
     onDismiss: () -> Unit,
     onConfirm: (label: String, notes: String, date: Timestamp) -> Unit
 ) {
     val context = LocalContext.current
 
     var selectedDate by remember { mutableStateOf(day?.date) }
-    var label by remember { mutableStateOf(day?.label ?: "") }
+    var label by remember { mutableStateOf(day?.label ?: defaultLabel) }
     var notes by remember { mutableStateOf(day?.notes ?: "") }
 
     AlertDialog(
@@ -43,25 +43,28 @@ fun NewTrainingDayDialog(
 
                 OutlinedTextField(
                     value = notes,
-                    onValueChange = { notes = it },
+                    onValueChange = { if (it.length <= 50) notes = it }, // límite de 50 caracteres,
                     label = { Text("Notas") },
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Text("Fecha: ${selectedDate?.toDate()?.formatAsDate() ?: "Sin seleccionar"}")
-
-                Button(onClick = {
-                    showDatePicker(
-                        context = context,
-                        preselected = selectedDate,
-                        minDate = minDate,
-                        maxDate = maxDate
-                    ) { selected ->
-                        selectedDate = selected
-                    }
-                }) {
-                    Text("Seleccionar fecha")
-                }
+                Text(
+                    text = "Fecha: ${selectedDate?.toDate()?.formatAsDate() ?: "Sin seleccionar"}",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            showDatePicker(
+                                context = context,
+                                preselected = selectedDate,
+                                minDate = minDate,
+                                maxDate = maxDate
+                            ) { selected ->
+                                selectedDate = selected
+                            }
+                        },
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         },
         confirmButton = {
@@ -77,7 +80,12 @@ fun NewTrainingDayDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) {
                 Text("Cancelar")
             }
         }

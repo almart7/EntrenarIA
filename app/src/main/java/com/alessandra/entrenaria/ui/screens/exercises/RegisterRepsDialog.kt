@@ -1,4 +1,4 @@
-package com.alessandra.entrenaria.ui.components
+package com.alessandra.entrenaria.ui.screens.exercises
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -23,53 +23,58 @@ fun RegisterRepsDialog(
     var repsInputs by remember { mutableStateOf(exercise.sets.map { it.actualReps?.toString() ?: "" }) }
     var notes by remember { mutableStateOf(initialNotes) }
 
+    // Asegura que al cambiar de ejercicio se carguen sus notas previas correctamente
+    LaunchedEffect(exercise.id) {
+        repsInputs = exercise.sets.map { it.actualReps?.toString() ?: "" }
+        notes = exercise.notes
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Registrar repeticiones") },
         text = {
             Column {
+                // Nombre del ejercicio
                 Text(
-                    // Nombre del ejercicio
                     text = exercise.name,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                // Por cada set, hay un campo para introducir las repeticiones realizadas
+                // Campo para cada set
                 exercise.sets.forEachIndexed { index, set ->
                     OutlinedTextField(
                         value = repsInputs.getOrElse(index) { "" },
-                        // Guarda los valores introducidos en una lista
                         onValueChange = { newValue ->
                             repsInputs = repsInputs.toMutableList().also {
                                 it[index] = newValue
                             }
                         },
-                        // Se indican las repeticiones que se esperan para ese set
                         label = {
                             Text("Set ${index + 1} (objetivo: ${set.targetRepsMin}-${set.targetRepsMax})")
                         },
                         keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
                     )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // campo para notas del ejercicio
+                // Campo de notas
                 OutlinedTextField(
                     value = notes,
-                    onValueChange = { notes = it },
+                    onValueChange = { if (it.length <= 100) notes = it }, // max 100 caracteres
                     label = { Text("Notas") },
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
         },
 
-        // Confirmación del registro de repeticiones
+        // Confirmar
         confirmButton = {
             TextButton(onClick = {
-                // Actualiza las repeticiones registradas para cada set
                 val updatedSets = exercise.sets.mapIndexed { i, set ->
                     val reps = repsInputs.getOrNull(i)?.toIntOrNull()
                     if (reps == null || reps < 0) {
@@ -83,7 +88,6 @@ fun RegisterRepsDialog(
                     set.copy(actualReps = reps)
                 }
 
-                // Actualiza el ejercicio con las repeticiones registradas
                 val updatedExercise = exercise.copy(
                     sets = updatedSets,
                     notes = notes
@@ -93,8 +97,15 @@ fun RegisterRepsDialog(
                 Text("Guardar")
             }
         },
+
+        // Cancelar con color distintivo
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) {
                 Text("Cancelar")
             }
         }

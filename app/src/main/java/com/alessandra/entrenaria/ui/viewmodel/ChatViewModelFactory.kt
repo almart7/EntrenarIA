@@ -3,7 +3,7 @@ package com.alessandra.entrenaria.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.alessandra.entrenaria.data.repository.ChatRepository
-import com.entrenaria.models.TrainingRepository
+import com.alessandra.entrenaria.model.TrainingRepository
 
 // Fábrica personalizada para crear un ChatViewModel con parámetros
 // por defecto, solo se pueden crear ViewModels sin parámetros.

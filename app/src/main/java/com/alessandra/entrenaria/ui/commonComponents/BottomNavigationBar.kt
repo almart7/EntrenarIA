@@ -1,4 +1,4 @@
-package com.alessandra.entrenaria.ui.components
+package com.alessandra.entrenaria.ui.commonComponents
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubble
@@ -33,7 +33,10 @@ fun BottomNavigationBar(
         BottomBarItem.ChatItem
     )
 
-    NavigationBar {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.primaryContainer, // o primary
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer  // o onPrimary
+    ) {
         items.forEach { item ->
             val selected = currentDestination == item.destination
 

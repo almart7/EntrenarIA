@@ -1,4 +1,4 @@
-package com.alessandra.entrenaria.ui.components
+package com.alessandra.entrenaria.ui.screens.chat
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -10,7 +10,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.alessandra.entrenaria.data.model.ChatMessage
 
@@ -27,8 +26,11 @@ fun ChatBubble(message: ChatMessage) {
             .padding(vertical = 4.dp) // Espaciado entre burbujas
     ) {
         Surface(
-            // Color diferente para mensajes del usuario y del asistente
-            color = if (isUser) Color(0xFFDCF8C6) else Color.LightGray,
+            // Color diferente para mensajes del usuario y del asistente (basado en el tema)
+            color = if (isUser)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surfaceVariant,
             shape = RoundedCornerShape(8.dp), // Bordes redondeados para la burbuja
             modifier = Modifier.padding(horizontal = 8.dp)
         ) {
@@ -36,9 +38,12 @@ fun ChatBubble(message: ChatMessage) {
             Text(
                 text = message.text,
                 modifier = Modifier.padding(8.dp),
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isUser)
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
-

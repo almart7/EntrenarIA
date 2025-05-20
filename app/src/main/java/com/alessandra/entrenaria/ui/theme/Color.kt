@@ -23,7 +23,7 @@ val ErrorContainerLight = Color(0xFFFFDAD6)
 val OnErrorContainerLight = Color(0xFF410002)
 
 // Dark Theme Colors
-val PrimaryDark = Color(0xFFFFB68C)
+val PrimaryDark = Color(0xFFF25F15)
 val OnPrimaryDark = Color(0xFF5C1F00)
 val PrimaryContainerDark = Color(0xFF832F00)
 val OnPrimaryContainerDark = Color(0xFFFFDCC9)

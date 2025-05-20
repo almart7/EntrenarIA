@@ -1,4 +1,4 @@
-package com.entrenaria.models
+package com.alessandra.entrenaria.model
 
 import android.util.Log
 import com.alessandra.entrenaria.data.model.TrainingPeriod
@@ -193,6 +193,22 @@ class TrainingRepository(private val db: FirebaseFirestore = FirebaseFirestore.g
         // Borrar el periodo
         deleteTrainingPeriod(periodId)
     }
+
+    suspend fun deleteTrainingDayWithChildren(userId: String, dayId: String) {
+        // Borrar ejercicios relacionados con el día
+        val exercises = db.collection("exercises")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("dayId", dayId)
+            .get().await()
+
+        for (doc in exercises.documents) {
+            doc.reference.delete()
+        }
+
+        // Borrar el día de entrenamiento
+        db.collection("training_days").document(dayId).delete().await()
+    }
+
 
     // --------- ACTUALIZACIÓN ---------
     suspend fun updateExercise(exercise: Exercise) {

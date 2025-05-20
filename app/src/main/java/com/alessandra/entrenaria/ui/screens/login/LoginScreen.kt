@@ -15,7 +15,8 @@ import com.google.firebase.auth.FirebaseAuth
 @Composable
 fun LoginScreen(
     auth: FirebaseAuth,
-    navigateToHome: () -> Unit
+    navigateToHome: () -> Unit,
+    navigateToInitial: () -> Unit
 ) {
     // Toma los contenidos de los TextFields y los guarda en variables
     var email by remember { mutableStateOf("") }
@@ -24,6 +25,11 @@ fun LoginScreen(
     val context = LocalContext.current
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Iniciar sesión") }
+            )
+        },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
@@ -39,15 +45,11 @@ fun LoginScreen(
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
-            TextField(
+            OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
+                singleLine = true
             )
 
             Spacer(Modifier.height(32.dp))
@@ -58,16 +60,12 @@ fun LoginScreen(
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
-            TextField(
+            OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(), // Ocultar caracteres contraseña
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
+                visualTransformation = PasswordVisualTransformation() // Ocultar caracteres contraseña
             )
 
             Spacer(Modifier.height(32.dp))
@@ -91,9 +89,22 @@ fun LoginScreen(
                         Toast.makeText(context, "Por favor, completa los campos", Toast.LENGTH_LONG).show()
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
                 Text(text = "Iniciar sesión")
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Botón cancelar
+            TextButton(
+                onClick = { navigateToInitial() }
+            ) {
+                Text("Cancelar", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

@@ -19,7 +19,8 @@ import com.google.firebase.ktx.Firebase
 @Composable
 fun SignUpScreen(
     auth: FirebaseAuth,
-    navigateToHome: () -> Unit = {}
+    navigateToHome: () -> Unit,
+    navigateToInitial: () -> Unit
 ) {
     // Toma los contenidos de los TextFields y los guarda en variables
     var email by remember { mutableStateOf("") }
@@ -28,7 +29,12 @@ fun SignUpScreen(
     val context = LocalContext.current
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = { Text("Crear cuenta") }
+            )
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -38,54 +44,36 @@ fun SignUpScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Email
-            Text(
-                text = "Email",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            TextField(
+            OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
+                label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
+                singleLine = true
             )
 
             Spacer(Modifier.height(32.dp))
 
             // Contraseña
-            Text(
-                text = "Contraseña",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            TextField(
+            OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
+                label = { Text("Contraseña") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(), // Ocultar caracteres contraseña
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
+                visualTransformation = PasswordVisualTransformation() // Ocultar caracteres contraseña
             )
 
             Spacer(Modifier.height(32.dp))
 
-            // Botón iniciar sesión
+            // Botón registrar
             Button(
                 onClick = {
-
                     // Validaciones
                     if (email.isBlank() || password.isBlank()) {
                         Toast.makeText(context, "Por favor, completa todos los campos", Toast.LENGTH_LONG).show()
                     } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
                         Toast.makeText(context, "Introduce un email válido", Toast.LENGTH_LONG).show()
-
                     } else if (password.length < 6) {
                         Toast.makeText(context, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_LONG).show()
                     } else {
@@ -105,25 +93,20 @@ fun SignUpScreen(
                                             .document(it.uid)
                                             .set(userData)
                                             .addOnSuccessListener {
-                                                //Log.d("Firestore", "Usuario creado en Firestore correctamente")
                                                 navigateToHome()
                                             }
-                                            .addOnFailureListener { e ->
-                                                //Log.w("Firestore", "Error al crear usuario en Firestore", e)
+                                            .addOnFailureListener {
                                                 Toast.makeText(context, "Error al crear usuario en Firestore", Toast.LENGTH_LONG).show()
                                                 auth.currentUser?.delete()?.addOnSuccessListener {
                                                     auth.signOut()
                                                 }
                                             }
                                     }
-
                                 } else {
-                                    // Si no, muestra una alerta
                                     val exception = task.exception
                                     if (exception is FirebaseAuthUserCollisionException) {
                                         Toast.makeText(context, "Este email ya está registrado", Toast.LENGTH_LONG).show()
                                     } else {
-
                                         Toast.makeText(
                                             context,
                                             "Error al registrarse: ${exception?.localizedMessage ?: "Desconocido"}",
@@ -134,11 +117,24 @@ fun SignUpScreen(
                             }
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
                 Text(text = "Registrarse")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Botón cancelar
+            TextButton(
+                onClick = navigateToInitial,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Cancelar", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
-

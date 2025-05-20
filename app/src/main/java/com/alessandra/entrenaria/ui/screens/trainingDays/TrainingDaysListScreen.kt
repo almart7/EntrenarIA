@@ -1,5 +1,6 @@
 package com.alessandra.entrenaria.ui.screens.trainingDays
 
+import NewTrainingDayDialog
 import android.widget.Toast
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -17,13 +18,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alessandra.entrenaria.data.model.TrainingDay
 import com.alessandra.entrenaria.navigation.TrainingDays
-import com.alessandra.entrenaria.ui.components.BottomNavigationBar
-import com.alessandra.entrenaria.ui.components.NewTrainingDayDialog
-import com.alessandra.entrenaria.ui.components.handleBottomBarNavigation
+import com.alessandra.entrenaria.ui.commonComponents.BottomNavigationBar
+import com.alessandra.entrenaria.ui.commonComponents.ConfirmDeleteDialog
+import com.alessandra.entrenaria.ui.commonComponents.handleBottomBarNavigation
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModel
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModelFactory
 import com.alessandra.entrenaria.util.formatAsDate
-import com.entrenaria.models.TrainingRepository
+import com.alessandra.entrenaria.util.isToday
+import com.alessandra.entrenaria.model.TrainingRepository
 
 @Composable
 fun TrainingDaysScreen(
@@ -95,8 +97,9 @@ fun TrainingDaysScreen(
             Text("Días de entrenamiento", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp))
 
             LazyColumn {
-                items(trainingDays.sortedByDescending { it.date }) { day ->
+                items(trainingDays.sortedBy { it.date }) { day ->
                     val isSelected = selectedDays.contains(day.id)
+                    val isToday = isToday(day.date)
 
                     Card(
                         modifier = Modifier
@@ -118,7 +121,11 @@ fun TrainingDaysScreen(
                                         selectedDays.add(day.id)
                                     }
                                 }
-                            )
+                            ),
+                        colors = if (isToday)
+                            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                        else
+                            CardDefaults.cardColors()
                     ) {
                         Row(
                             modifier = Modifier
@@ -128,7 +135,15 @@ fun TrainingDaysScreen(
                         ) {
                             Column(Modifier.weight(1f)) {
                                 Text(day.label, style = MaterialTheme.typography.titleMedium)
-                                Text("Fecha: ${day.date.formatAsDate()}")
+                                // Mostrar las notas, si existen
+                                if (day.notes.isNotBlank()) {
+                                    Text(
+                                        text = day.notes,
+                                        //style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                }
+                                Text(day.date.formatAsDate(), style = MaterialTheme.typography.bodySmall)
                             }
 
                             Row {
@@ -159,6 +174,7 @@ fun TrainingDaysScreen(
         if (showDialog && trainingPeriod != null) {
             val startDate = trainingPeriod!!.startDate.toDate()
             val endDate = trainingPeriod!!.endDate?.toDate()
+            val defaultLabel = "Día ${trainingDays.size + 1}"
 
             NewTrainingDayDialog(
                 userId = userId,
@@ -166,6 +182,7 @@ fun TrainingDaysScreen(
                 day = dayToEdit,
                 minDate = startDate,
                 maxDate = endDate,
+                defaultLabel = defaultLabel,
                 onDismiss = {
                     showDialog = false
                     dayToEdit = null
@@ -191,35 +208,21 @@ fun TrainingDaysScreen(
         }
 
         if (showDeleteDialog && selectedDays.isNotEmpty()) {
-            AlertDialog(
-                title = { Text("¿Eliminar días seleccionados?") },
-                text = { Text("Se eliminarán todos los días seleccionados.") },
-                onDismissRequest = {
+            ConfirmDeleteDialog(
+                visible = true,
+                title = "¿Eliminar días seleccionados?",
+                text = "Esta acción eliminará todos los días seleccionados y sus datos.",
+                onConfirm = {
+                    selectedDays.forEach { viewModel.deleteTrainingDayWithChildren(it, periodId) }
+                    Toast.makeText(context, "Días eliminados", Toast.LENGTH_SHORT).show()
                     showDeleteDialog = false
                     selectionMode = false
                     selectedDays.clear()
                 },
-                confirmButton = {
-                    TextButton(onClick = {
-                        selectedDays.forEach {
-                            viewModel.deleteTrainingDay(it)
-                        }
-                        Toast.makeText(context, "Días eliminados", Toast.LENGTH_SHORT).show()
-                        showDeleteDialog = false
-                        selectionMode = false
-                        selectedDays.clear()
-                    }) {
-                        Text("Eliminar", color = MaterialTheme.colorScheme.error)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = {
-                        showDeleteDialog = false
-                        selectionMode = false
-                        selectedDays.clear()
-                    }) {
-                        Text("Cancelar")
-                    }
+                onDismiss = {
+                    showDeleteDialog = false
+                    selectionMode = false
+                    selectedDays.clear()
                 }
             )
         }

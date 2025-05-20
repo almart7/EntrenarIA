@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.alessandra.entrenaria.data.model.TrainingPeriod
 import com.alessandra.entrenaria.data.model.TrainingDay
 import com.alessandra.entrenaria.data.model.Exercise
-import com.entrenaria.models.TrainingRepository
+import com.alessandra.entrenaria.model.TrainingRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -89,12 +89,10 @@ class TrainingViewModel(
         }
     }
 
-    fun deleteTrainingDay(dayId: String) {
+    fun deleteTrainingDayWithChildren(dayId: String, periodId: String) {
         viewModelScope.launch {
-            try {
-                repository.deleteTrainingDay(dayId)
-                _trainingDays.value = _trainingDays.value.filterNot { it.id == dayId }
-            } catch (_: Exception) {}
+            repository.deleteTrainingDayWithChildren(userId, dayId)
+            loadTrainingDays(periodId)
         }
     }
 
@@ -147,4 +145,5 @@ class TrainingViewModel(
             _exerciseDetail.value = repository.getExerciseById(id)
         }
     }
+
 }

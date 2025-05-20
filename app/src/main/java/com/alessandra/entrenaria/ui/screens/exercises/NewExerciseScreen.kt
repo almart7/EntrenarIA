@@ -20,13 +20,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alessandra.entrenaria.data.model.Exercise
 import com.alessandra.entrenaria.data.model.ExerciseSet
 import com.alessandra.entrenaria.navigation.NewExercise
-import com.alessandra.entrenaria.ui.components.BottomNavigationBar
+import com.alessandra.entrenaria.ui.commonComponents.BottomNavigationBar
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModel
 import com.alessandra.entrenaria.ui.viewmodel.TrainingViewModelFactory
-import com.entrenaria.models.TrainingRepository
+import com.alessandra.entrenaria.model.TrainingRepository
 import com.google.firebase.Timestamp
-import com.alessandra.entrenaria.ui.components.handleBottomBarNavigation
-
+import com.alessandra.entrenaria.ui.commonComponents.handleBottomBarNavigation
 
 data class ExerciseSetUiModel(
     var targetRepsMin: String = "",
@@ -44,7 +43,7 @@ fun NewExerciseScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToChat: () -> Unit,
     onBack: () -> Unit
-){
+) {
     val context = LocalContext.current
     val repository = remember { TrainingRepository() }
     val viewModel: TrainingViewModel = viewModel(
@@ -170,8 +169,9 @@ fun NewExerciseScreen(
             // Instrucciones
             OutlinedTextField(
                 value = instructions,
-                onValueChange = { instructions = it },
+                onValueChange = { if (it.length <= 100) instructions = it },  // max 100 caracteres
                 label = { Text("Instrucciones (opcional)") },
+                singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
@@ -240,7 +240,18 @@ fun NewExerciseScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // Guardar
+            // Botón de cancelar
+            OutlinedButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text("Cancelar")
+            }
+
+            // Botón de guardar
             Button(
                 onClick = {
                     val parsedSets = sets.map { uiSet ->

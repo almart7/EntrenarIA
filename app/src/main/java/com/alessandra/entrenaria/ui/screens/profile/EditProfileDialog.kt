@@ -1,4 +1,4 @@
-package com.alessandra.entrenaria.ui.components
+package com.alessandra.entrenaria.ui.screens.profile
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -61,15 +61,20 @@ fun EditProfileDialog(
                 },
                 enabled = name.isNotBlank() && age.isNotBlank() && selectedGender != null
             ) {
-                Text("Guardar")
+                Text("Guardar", color = MaterialTheme.colorScheme.primary)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancelar")
+                Text("Cancelar", color = MaterialTheme.colorScheme.onSurface)
             }
         },
-        title = { Text("Editar Perfil") },
+        title = {
+            Text(
+                "Editar Perfil",
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        },
         text = {
             Column {
                 OutlinedTextField(
@@ -77,7 +82,11 @@ fun EditProfileDialog(
                     onValueChange = { name = it },
                     label = { Text("Nombre") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
                 )
                 Spacer(Modifier.height(16.dp))
                 OutlinedTextField(
@@ -90,31 +99,38 @@ fun EditProfileDialog(
                     label = { Text("Edad") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
                 )
                 Spacer(Modifier.height(16.dp))
-                Box(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .clickable { expanded = true }
+                        .padding(16.dp)
+                ) {
                     Text(
                         text = selectedGender ?: "Seleccionar Género",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { expanded = true }
-                            .padding(16.dp)
-                            .background(MaterialTheme.colorScheme.primaryContainer)
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        genderOptions.forEach { gender ->
-                            DropdownMenuItem(
-                                text = { Text(gender) },
-                                onClick = {
-                                    selectedGender = gender
-                                    expanded = false
-                                }
-                            )
-                        }
+                }
+
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    genderOptions.forEach { gender ->
+                        DropdownMenuItem(
+                            text = { Text(gender) },
+                            onClick = {
+                                selectedGender = gender
+                                expanded = false
+                            }
+                        )
                     }
                 }
             }

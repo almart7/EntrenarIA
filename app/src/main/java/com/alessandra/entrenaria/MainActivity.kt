@@ -11,8 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import com.alessandra.entrenaria.navigation.NavigationWrapper
-import com.alessandra.entrenaria.ui.theme.EntrenarIATheme
+import com.alessandra.entrenaria.core.navigation.NavigationWrapper
+import com.alessandra.entrenaria.core.ui.theme.EntrenarIATheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase

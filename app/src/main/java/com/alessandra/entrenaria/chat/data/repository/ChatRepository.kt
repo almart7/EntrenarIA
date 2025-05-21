@@ -60,7 +60,7 @@ class ChatRepository(private val database: FirebaseDatabase) {
 
             $context
 
-            Basado en esa información, responde lo siguiente:
+            Basado en esa información, responde lo siguiente de forma precisa y concisa:
             $question
         """.trimIndent()
     }

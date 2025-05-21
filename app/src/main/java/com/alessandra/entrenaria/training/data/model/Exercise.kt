@@ -2,7 +2,9 @@ package com.alessandra.entrenaria.training.data.model
 
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
+import androidx.annotation.Keep
 
+@Keep
 data class Exercise(
     @DocumentId val id: String = "",
     val userId: String = "",

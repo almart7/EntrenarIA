@@ -2,9 +2,9 @@ package com.alessandra.entrenaria.training.ui.screens.exercises
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
@@ -117,6 +117,7 @@ fun NewExerciseScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             // Nombre del ejercicio
             ExposedDropdownMenuBox(
@@ -198,8 +199,8 @@ fun NewExerciseScreen(
             }
 
             // Lista de sets
-            LazyColumn {
-                itemsIndexed(sets) { index, set ->
+            Column {
+                sets.forEachIndexed { index, set ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

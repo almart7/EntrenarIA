@@ -56,7 +56,7 @@ class ChatRepository(private val database: FirebaseDatabase) {
 
         return """
             Eres un entrenador personal con varios años de experiencia.
-            Estos son mis entrenamientos del último mes:
+            Estos son mis entrenamientos del último mes (ten en cuenta la fecha de hoy, planifico con antelación y puede haber ejercicios no realizados porque se harán luego):
 
             $context
 
